@@ -5,6 +5,7 @@
 //  Created by Taketo Sano on 2019/07/01.
 //
 
+import Foundation
 import SwmCore
 import SwmHomology
 
@@ -14,6 +15,22 @@ public struct GridDiagram {
     public let name: String
     public let Os: [Point]
     public let Xs: [Point]
+    
+    public static func load(_ name: String) -> GridDiagram? {
+        #if os(macOS) || os(Linux)
+        typealias GridCode = [String : [Int]]
+        if
+            let url = Bundle.module.url(forResource: name, withExtension: "json"),
+            let data = try? Data(contentsOf: url),
+            let code = try? JSONDecoder().decode(GridCode.self, from: data),
+            let Os = code["O"],
+            let Xs = code["X"]
+        {
+            return GridDiagram(name: name, Os: Os, Xs: Xs)
+        }
+        #endif
+        return nil
+    }
     
     public init(name: String? = nil, arcPresentation code: [Int]) {
         assert(code.count.isEven)

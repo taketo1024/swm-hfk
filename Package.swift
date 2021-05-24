@@ -32,7 +32,8 @@ let package = Package(
                 .product(name: "SwmCore", package: "swm-core"),
                 .product(name: "SwmKnots", package: "swm-knots"),
                 .product(name: "SwmHomology", package: "swm-homology"),
-			]
+			],
+            resources: [.process("Resources")]
 		),
         .testTarget(
             name: "SwmHFKTests",
