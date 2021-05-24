@@ -1,12 +1,12 @@
 //
 //  GridComplex.swift
-//  SwiftyHomology
+//  SwmHomology
 //
 //  Created by Taketo Sano on 2019/07/04.
 //
 
-import SwiftyMath
-import SwiftyHomology
+import SwmCore
+import SwmHomology
 
 public struct _U: PolynomialIndeterminate {
     public static let degree = -2

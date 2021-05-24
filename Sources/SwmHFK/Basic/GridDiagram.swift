@@ -1,12 +1,12 @@
 //
 //  GridDiagram.swift
-//  SwiftyHomology
+//  SwmHomology
 //
 //  Created by Taketo Sano on 2019/07/01.
 //
 
-import SwiftyMath
-import SwiftyHomology
+import SwmCore
+import SwmHomology
 
 public struct GridDiagram {
     // Memo:  Os and Xs are placed on  odd points,

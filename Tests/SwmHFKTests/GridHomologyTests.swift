@@ -1,23 +1,21 @@
 //
 //  GridHomologyTests.swift
-//  SwiftyKnotsTests
+//  SwmKnotsTests
 //
 //  Created by Taketo Sano on 2019/07/01.
 //
 
 import XCTest
-import SwiftyMath
-import SwiftyHomology
-@testable import SwiftyKnots
+import SwmCore
+import SwmHomology
+@testable import SwmHFK
 
 class GridHomologyTests: XCTestCase {
     
     override func setUp() {
-        try! Link.loadResource("K10")
     }
     
     override func tearDown() {
-        Link.unloadResources()
     }
     
     func testChainComplex_tilde() {

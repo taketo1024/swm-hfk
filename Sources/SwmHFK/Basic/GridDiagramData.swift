@@ -1,6 +1,6 @@
 //
 //  GridDiagram_Examples.swift
-//  SwiftyKnots
+//  SwmKnots
 //
 //  Created by Taketo Sano on 2019/07/17.
 //

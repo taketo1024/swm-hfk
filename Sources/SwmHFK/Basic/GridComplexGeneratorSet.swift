@@ -1,11 +1,11 @@
 //
 //  GridComplexData.swift
-//  SwiftyHomology
+//  SwmHomology
 //
 //  Created by Taketo Sano on 2020/02/06.
 //
 
-import SwiftyMath
+import SwmCore
 import Dispatch
 
 extension GridComplex {
