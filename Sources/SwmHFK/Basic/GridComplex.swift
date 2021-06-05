@@ -129,8 +129,7 @@ public struct GridComplex: ChainComplexType {
                 }
                 
             return BaseModule(
-                elements: ys.map{ y in (y, R.identity) },
-                generatorsAreUnique: ys.isUnique
+                elements: ys.map{ y in (y, R.identity) }
             )
         }
         
