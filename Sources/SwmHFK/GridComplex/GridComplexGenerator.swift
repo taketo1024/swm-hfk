@@ -59,32 +59,29 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
     }
     
     // See: Knuth, Volume 2, Section 3.3.2, Algorithm P
-    internal static func encode(_ _seq: [UInt8]) -> Int {
-        var seq = _seq
-        var r = UInt8(_seq.count)
+    internal static func encode(_ seq: [UInt8]) -> Int {
+        var tmp = seq
         var code = 0
         
-        while r > 0 {
-            let m = (0 ..< r).first { m in
-                r - seq[m] == 1
+        for r in (0 ..< UInt8(seq.count)).reversed() {
+            let m = (0 ..< r + 1).first { m in
+                r == tmp[m]
             }!
-            code = code * Int(r) + Int(m)
-            r -= 1
-            seq.swapAt(r, m)
+            code = code * Int(r + 1) + Int(m)
+            tmp.swapAt(r, m)
         }
         
         return code
     }
     
-    internal static func decode(_ _code: Int, _ size: UInt8) -> [UInt8] {
-        var (code, r) = (_code, 1)
+    internal static func decode(_ code: Int, _ size: UInt8) -> [UInt8] {
+        var tmp = code
         var seq = Array(0 ..< size)
         
-        while r < Int(size) {
-            let m = code % (r + 1)
-            code = code / (r + 1)
+        for r in 1 ..< Int(size) {
+            let m = tmp % (r + 1)
+            tmp = tmp / (r + 1)
             seq.swapAt(r, m)
-            r += 1
         }
         
         return seq
