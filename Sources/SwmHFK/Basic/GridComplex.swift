@@ -16,6 +16,9 @@ public struct _U: PolynomialIndeterminate {
 public typealias _Un = EnumeratedPolynomialIndeterminates<_U, anySize>
 
 public struct GridComplex: ChainComplexType {
+    public typealias Generator = GridComplexGenerator
+    public typealias GeneratorSet = GridComplexConstruction // TODO remove this 
+    
     public typealias R = 𝐅₂
     public typealias T = TensorGenerator<
         MonomialAsGenerator<_Un>,
@@ -154,6 +157,7 @@ public struct GridComplex: ChainComplexType {
         }
     }
     
+    // FIXME: very slow!
     public var bigraded: ChainComplex2<BaseModule> {
         chainComplex.asBigraded { summand in
             summand.generator.elements.anyElement!.key.AlexanderDegree
