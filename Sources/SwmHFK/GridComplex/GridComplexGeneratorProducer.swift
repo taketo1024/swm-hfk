@@ -13,13 +13,13 @@ internal final class GridComplexGeneratorProducer {
     typealias Rect  = GridDiagram.Rect
     
     let G: GridDiagram
-    let rects: GridComplexConstruction.Rects
+    let table: GridDiagram.OXIntersectionTable
     let filter: (Generator) -> Bool
     let trans: [(Int, Int)]
     
-    init(_ G: GridDiagram, _ rects: GridComplexConstruction.Rects, _ filter: @escaping (Generator) -> Bool) {
+    init(_ G: GridDiagram, _ intersectionTable: GridDiagram.OXIntersectionTable, _ filter: @escaping (Generator) -> Bool) {
         self.G = G
-        self.rects = rects
+        self.table = intersectionTable
         self.filter = filter
         
         let n = G.gridNumber
@@ -71,8 +71,8 @@ internal final class GridComplexGeneratorProducer {
             // A(y) - A(x) = #(r ∩ Os) - #(r ∩ Xs)
             
             let r = GridDiagram.Rect(from: pts[i], to: pts[j], gridSize: G.gridSize)
-            let nO = rects[r].countIntersections(.O)
-            let nX = rects[r].countIntersections(.X)
+            let nO = table[r].countIntersections(.O)
+            let nX = table[r].countIntersections(.X)
             
             let c = (i + 1 ..< j).count { i in
                 r.contains(pts[i], interior: true)

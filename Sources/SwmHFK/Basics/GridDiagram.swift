@@ -10,6 +10,10 @@ import SwmCore
 import SwmHomology
 
 public struct GridDiagram {
+    enum OX {
+        case O, X
+    }
+
     // Memo:  Os and Xs are placed on  odd points,
     //       generators are placed on even points.
     public let name: String

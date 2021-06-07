@@ -17,7 +17,8 @@ public struct GridComplexConstruction: Sequence {
 
     public let diagram: GridDiagram
     internal let generators: [Int : Generator]
-    internal let rects: Rects
+    
+    private let intersectionTable: GridDiagram.OXIntersectionTable
     private let transpositions: [(Int, Int)]
     
     public init(diagram: GridDiagram) {
@@ -25,25 +26,29 @@ public struct GridComplexConstruction: Sequence {
     }
     
     public init(diagram: GridDiagram, filter: @escaping (Generator) -> Bool) {
-        let rects = Rects(diagram)
-        let generators = GridComplexGeneratorProducer(diagram, rects, filter).produce()
+        let intersectionTable = diagram.intersectionTable
+        let generators = GridComplexGeneratorProducer(diagram, intersectionTable, filter).produce()
         self.init(
             diagram: diagram,
             generators: Dictionary(generators.map { x in (x.code, x) }),
-            rects: rects
+            intersectionTable: intersectionTable
         )
     }
     
-    private init(diagram: GridDiagram, generators: [Int : Generator], rects: Rects) {
+    private init(diagram: GridDiagram, generators: [Int : Generator], intersectionTable: GridDiagram.OXIntersectionTable) {
         let n = diagram.gridNumber
         self.diagram = diagram
         self.generators = generators
-        self.rects = rects
+        self.intersectionTable = intersectionTable
         self.transpositions = (0 ..< n).choose(2).map{ t in (t[0], t[1]) }
     }
     
     public var gridNumber: Int {
         diagram.gridNumber
+    }
+    
+    public var numberOfGenerators: Int {
+        generators.count
     }
     
     public var MaslovDegreeRange: ClosedRange<Int> {
@@ -68,7 +73,7 @@ public struct GridComplexConstruction: Sequence {
         GeneratorSet(
             diagram: diagram,
             generators: generators.filter{ (_, x) in predicate(x) },
-            rects: rects
+            intersectionTable: intersectionTable
         )
     }
     
@@ -101,6 +106,10 @@ public struct GridComplexConstruction: Sequence {
         }
     }
     
+    public func intersectionInfo(for r: Rect) -> GridDiagram.OXIntersectionTable.Info {
+        intersectionTable[r]
+    }
+    
     public func makeIterator() -> AnySequence<Generator>.Iterator {
         AnySequence(generators.values).makeIterator()
     }
@@ -116,81 +125,5 @@ public struct GridComplexConstruction: Sequence {
             .flatMap { (i, list) in list.map{ (j, c) in (i, j, c) }}
         
         return Format.table(elements: elements)
-    }
-    
-    internal struct Rects {
-        private let data: [Rect : Info]
-        
-        init(_ G: GridDiagram) {
-            typealias Point = GridDiagram.Point
-            
-            let n = G.gridNumber
-            let rects = ((0 ..< n) * (0 ..< n)).flatMap { (x, y) -> [Rect] in
-                return ((0 ..< n) * (0 ..< n)).map { (w, h) -> Rect in
-                    return Rect(
-                        origin: Point(2 * x, 2 * y),
-                        size: Point(2 * w, 2 * h),
-                        gridSize: G.gridSize
-                    )
-                }
-            }
-            
-            self.data = Dictionary(keys: rects) { r in
-                Info(G, r)
-            }
-        }
-        
-        subscript(_ r: Rect) -> Info {
-            data[r]!
-        }
-        
-        struct Info {
-            let gridNumber: Int
-            let Ocode : Int
-            let Ocount: Int
-            let Xcode : Int
-            let Xcount: Int
-            
-            init(_ G: GridDiagram, _ r: Rect) {
-                let (Os, Xs) = (G.Os, G.Xs)
-                self.gridNumber = G.gridNumber
-                (self.Ocode, self.Ocount) = Self.encodeIntersections(Os, r)
-                (self.Xcode, self.Xcount) = Self.encodeIntersections(Xs, r)
-            }
-            
-            private static func encodeIntersections(_ points: [Point], _ rect: Rect) -> (code: Int, count: Int) { // binary flags
-                points.enumerated().reduce(into: (0, 0)) { (res, e) in
-                    let (i, p) = e
-                    if rect.contains(p) {
-                        res.0 |= (1 << i)
-                        res.1 += 1
-                    }
-                }
-            }
-            
-            enum IntersectionType {
-                case O, X
-            }
-            
-            func intersections(_ type: IntersectionType) -> [Int] {
-                let code = (type == .O) ? Ocode : Xcode
-                return (0 ..< gridNumber).map { i in
-                    (code >> i) & 1
-                }
-            }
-            
-            func countIntersections(_ type: IntersectionType) -> Int {
-                (type == .O) ? Ocount : Xcount
-            }
-            
-            func intersects(_ type: IntersectionType) -> Bool {
-                countIntersections(type) > 0
-            }
-            
-            func intersects(_ type: IntersectionType, _ index: Int) -> Bool {
-                let code = (type == .O) ? Ocode : Xcode
-                return (code >> index) & 1 == 1
-            }
-        }
     }
 }

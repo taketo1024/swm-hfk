@@ -97,15 +97,15 @@ public struct GridComplex: ChainComplexType {
     
     public func rectCond(_ r: GridDiagram.Rect) -> Bool {
         let n = gridNumber
-        let rects = construction.rects
+        let info = construction.intersectionInfo(for: r)
         
         switch type {
         case .tilde:
-            return (!rects[r].intersects(.X) && !rects[r].intersects(.O))
+            return (!info.intersects(.X) && !info.intersects(.O))
         case .hat:
-            return (!rects[r].intersects(.X) && !rects[r].intersects(.O, n - 1))
+            return (!info.intersects(.X) && !info.intersects(.O, n - 1))
         case .minus:
-            return !rects[r].intersects(.X)
+            return !info.intersects(.X)
         case .filtered:
             return true
         }
@@ -116,8 +116,9 @@ public struct GridComplex: ChainComplexType {
             let ys = construction
                 .adjacents(of: x, with: { r in rectCond(r) })
                 .map { (y, r) -> InflatedGenerator in
+                    let info = construction.intersectionInfo(for: r)
                     let u = InflatedGenerator.Left(
-                        exponent: construction.rects[r].intersections(.O)
+                        exponent: info.intersections(.O)
                     )
                     return u ⊗ y
                 }
