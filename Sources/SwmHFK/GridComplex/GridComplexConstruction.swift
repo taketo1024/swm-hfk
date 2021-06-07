@@ -6,6 +6,7 @@
 //
 
 import SwmCore
+import Algorithms
 import Dispatch
 
 public typealias GeneratorSet = GridComplexConstruction
@@ -41,7 +42,9 @@ public struct GridComplexConstruction: Sequence {
         self.intersectionTable = intersectionTable
         
         let n = UInt8(diagram.gridNumber)
-        self.transpositions = (0 ..< n).choose(2).map{ t in (t[0], t[1]) }
+        self.transpositions = (0 ..< n).combinations(ofCount: 2).map{ t in
+            (t[0], t[1])
+        }
     }
     
     public var gridNumber: Int {

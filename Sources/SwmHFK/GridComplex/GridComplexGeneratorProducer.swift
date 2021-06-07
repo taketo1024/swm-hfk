@@ -40,7 +40,7 @@ internal final class GridComplexGeneratorProducer {
         var data: [(Generator.Code, Generator)] = .empty
         data.reserveCapacity((n - 1).factorial)
         
-        func add(_ seq: [UInt8], _ M: Int, _ A: Int) {
+        func append(_ seq: [UInt8], _ M: Int, _ A: Int) {
             let x = Generator(
                 sequence: seq,
                 MaslovDegree: M,
@@ -56,9 +56,10 @@ internal final class GridComplexGeneratorProducer {
         seq.swapAt(i, n - 1)
         
         var pts = points(seq)
-        var (m, a) = (M(pts), A(pts))
+        var m = G.MaslovDegree(for: pts)
+        var a = G.AlexanderDegree(for: pts)
         
-        add(seq, m, a)
+        append(seq, m, a)
         
         for (i, j) in trans {
             // M(y) - M(x) = 2 #(r ∩ Os) - 2 #(x ∩ Int(r)) - 1
@@ -83,7 +84,7 @@ internal final class GridComplexGeneratorProducer {
             m += dm
             a += da
             
-            add(seq, m, a)
+            append(seq, m, a)
         }
         
         return data
@@ -91,26 +92,6 @@ internal final class GridComplexGeneratorProducer {
     
     private func points(_ seq: [UInt8]) -> [Point] {
         seq.enumerated().map { (i, j) in Point(2 * UInt8(i), 2 * j) }
-    }
-    
-    private func I(_ x: [Point], _ y: [Point]) -> Int {
-        (x * y).count{ (p, q) in p < q }
-    }
-    
-    private func J(_ x: [Point], _ y: [Point]) -> Int {
-        I(x, y) + I(y, x)
-    }
-    
-    private func M(_ ref: [Point], _ x: [Point]) -> Int {
-        ( J(x, x) - 2 * J(x, ref) + J(ref, ref) ) / 2 + 1
-    }
-    
-    private func M(_ x: [Point]) -> Int {
-        M(G.Os, x)
-    }
-    
-    private func A(_ x: [Point]) -> Int {
-        ( M(G.Os, x) - M(G.Xs, x) - Int(G.gridNumber) + 1 ) / 2
     }
     
     // see Heap's algorithm: https://en.wikipedia.org/wiki/Heap%27s_algorithm

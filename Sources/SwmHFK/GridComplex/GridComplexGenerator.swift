@@ -101,3 +101,25 @@ extension GridDiagram {
         }
     }
 }
+
+extension GridDiagram {
+    private func I(_ x: [Point], _ y: [Point]) -> Int {
+        (x * y).count{ (p, q) in p < q }
+    }
+    
+    private func J(_ x: [Point], _ y: [Point]) -> Int {
+        I(x, y) + I(y, x)
+    }
+    
+    private func M(_ ref: [Point], _ x: [Point]) -> Int {
+        ( J(x, x) - 2 * J(x, ref) + J(ref, ref) ) / 2 + 1
+    }
+    
+    public func MaslovDegree(for x: [Point]) -> Int {
+        M(Os, x)
+    }
+    
+    public func AlexanderDegree(for x: [Point]) -> Int {
+        ( M(Os, x) - M(Xs, x) - Int(gridNumber) + 1 ) / 2
+    }
+}
