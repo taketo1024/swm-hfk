@@ -11,16 +11,17 @@ import Dispatch
 
 public typealias GeneratorSet = GridComplexConstruction
 
+// TODO make internal
 public struct GridComplexConstruction {
     public typealias Generator = GridComplexGenerator
+    public typealias GeneratorTable = [MultiIndex<_2> : [Generator]]
     public typealias Point = GridDiagram.Point
     public typealias Rect  = GridDiagram.Rect
 
     public let diagram: GridDiagram
     
-    internal typealias GeneratorTable = [MultiIndex<_2> : [Generator]]
-    internal let generators: GeneratorTable
-    internal let intersectionTable: OXIntersectionTable
+    public internal(set) var generators: GeneratorTable
+    private let intersectionTable: OXIntersectionTable
     private let transpositions: [(UInt8, UInt8)]
     
     public init(diagram: GridDiagram) {
@@ -61,8 +62,13 @@ public struct GridComplexConstruction {
         generators.keys.map{ $0[1] }.closureRange ?? (0 ... 0)
     }
     
+    public func contains(bidegree: (Int, Int)) -> Bool {
+        generators.contains(key: [bidegree.0, bidegree.1])
+    }
+    
+    @available(*, deprecated)
     public func generator(forSequence seq: [UInt8]) -> Generator? {
-        let x = diagram.generator(for: seq)
+        let x = Generator(sequence: seq, diagram: diagram)
         return generators.contains(key: [x.MaslovDegree, x.AlexanderDegree]) ? x : nil
     }
     

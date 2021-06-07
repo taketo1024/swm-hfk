@@ -11,14 +11,31 @@ import Dispatch
 public struct GridComplexGenerator: LinearCombinationGenerator {
     public typealias Code = UInt64
     public let code: Code
-    public let length: UInt8
+    public let gridNumber: UInt8
     public let MaslovDegree: Int
     public let AlexanderDegree: Int
     
+    public init(sequence: [UInt8], diagram: GridDiagram) {
+        let pts = sequence.toGridDiagramPoints()
+        let m = diagram.MaslovDegree(for: pts)
+        let a = diagram.AlexanderDegree(for: pts)
+        self.init(sequence: sequence, MaslovDegree: m, AlexanderDegree: a)
+    }
+    
     public init(sequence: [UInt8], MaslovDegree: Int, AlexanderDegree: Int) {
         assert(sequence.count <= 16)
-        self.code = Self.code(for: sequence)
-        self.length = UInt8(sequence.count)
+        self.init(
+            code: Self.code(for: sequence),
+            gridNumber: UInt8(sequence.count),
+            MaslovDegree: MaslovDegree,
+            AlexanderDegree: AlexanderDegree
+        )
+    }
+    
+    @inlinable
+    internal init(code: Code, gridNumber: UInt8, MaslovDegree: Int, AlexanderDegree: Int) {
+        self.code = code
+        self.gridNumber = gridNumber
         self.MaslovDegree = MaslovDegree
         self.AlexanderDegree = AlexanderDegree
     }
@@ -28,7 +45,7 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
     }
     
     public var sequence: [UInt8] {
-        Self.decode(code, length)
+        Self.decode(code, gridNumber)
     }
     
     public var points: [GridDiagram.Point] {
@@ -100,6 +117,7 @@ extension GridDiagram {
     }
 }
 
+// TODO make internal
 extension GridDiagram {
     private func I(_ x: [Point], _ y: [Point]) -> Int {
         (x * y).count{ (p, q) in p < q }
@@ -119,12 +137,5 @@ extension GridDiagram {
     
     public func AlexanderDegree(for x: [Point]) -> Int {
         ( M(Os, x) - M(Xs, x) - Int(gridNumber) + 1 ) / 2
-    }
-
-    public func generator(for seq: [UInt8]) -> GridComplexGenerator {
-        let pts = seq.toGridDiagramPoints()
-        let m = MaslovDegree(for: pts)
-        let a = AlexanderDegree(for: pts)
-        return .init(sequence: seq, MaslovDegree: m, AlexanderDegree: a)
     }
 }
