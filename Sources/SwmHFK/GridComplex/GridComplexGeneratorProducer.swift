@@ -28,11 +28,9 @@ internal final class GridComplexGeneratorProducer {
     
     func produce() -> [Generator.Code : Generator] {
         let n = UInt8(G.gridNumber)
-        
-        let data = Array(0 ..< n).parallelFlatMap { i in
+        let data = Array(0 ..< n).parallelFlatMap { i -> [(Generator.Code, Generator)] in
             self.produce(step: i)
         }
-        
         return Dictionary(data)
     }
     

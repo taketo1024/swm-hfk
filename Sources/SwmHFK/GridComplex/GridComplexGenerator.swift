@@ -9,13 +9,14 @@ import SwmCore
 import Dispatch
 
 public struct GridComplexGenerator: LinearCombinationGenerator {
-    public typealias Code = Int
+    public typealias Code = UInt64
     public let code: Code
     public let length: UInt8
     public let MaslovDegree: Int
     public let AlexanderDegree: Int
     
     public init(sequence: [UInt8], MaslovDegree: Int, AlexanderDegree: Int) {
+        assert(sequence.count <= 16)
         self.code = Self.code(for: sequence)
         self.length = UInt8(sequence.count)
         self.MaslovDegree = MaslovDegree
@@ -58,33 +59,18 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
         x.code < y.code
     }
     
-    // See: Knuth, Volume 2, Section 3.3.2, Algorithm P
-    internal static func encode(_ seq: [UInt8]) -> Int {
-        var tmp = seq
-        var code = 0
-        
-        for r in (0 ..< UInt8(seq.count)).reversed() {
-            let m = (0 ..< r + 1).first { m in
-                r == tmp[m]
-            }!
-            code = code * Int(r + 1) + Int(m)
-            tmp.swapAt(r, m)
+    internal static func encode(_ seq: [UInt8]) -> Code {
+        seq.reduce(into: UInt64(0)) {
+            $0 <<= 4
+            $0 |= UInt64($1)
         }
-        
-        return code
     }
     
-    internal static func decode(_ code: Int, _ size: UInt8) -> [UInt8] {
-        var tmp = code
-        var seq = Array(0 ..< size)
-        
-        for r in 1 ..< Int(size) {
-            let m = tmp % (r + 1)
-            tmp = tmp / (r + 1)
-            seq.swapAt(r, m)
-        }
-        
-        return seq
+    internal static func decode(_ code: Code, _ size: UInt8) -> [UInt8] {
+        (0 ..< size).reduce(into: ([UInt8].empty, code)) { (res, _) in
+            res.0.append(UInt8(res.1 & 0xF))
+            res.1 >>= 4
+        }.0.reversed()
     }
     
     public var description: String {
