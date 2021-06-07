@@ -37,8 +37,8 @@ public struct GridComplex: ChainComplexType {
     public typealias Differential = ChainMap<Self, Self>
     
     public var type: Variant
-    public var construction: GridComplexConstruction
     
+    internal var construction: GridComplexConstruction
     private let cCache: Cache<Int, ModuleStructure<BaseModule>> = .empty
     private let dCache: Cache<RawGenerator, BaseModule> = .empty
     
@@ -57,6 +57,18 @@ public struct GridComplex: ChainComplexType {
     
     public var gridNumber: UInt8 {
         diagram.gridNumber
+    }
+    
+    public var numberOfGenerators: Int {
+        construction.numberOfGenerators
+    }
+    
+    public var MaslovDegreeRange: ClosedRange<Int> {
+        construction.MaslovDegreeRange
+    }
+    
+    public var AlexanderDegreeRange: ClosedRange<Int> {
+        construction.AlexanderDegreeRange
     }
     
     public var numberOfIndeterminates: Int {
@@ -144,14 +156,12 @@ public struct GridComplex: ChainComplexType {
             }
         }
     }
-}
-
-extension TensorGenerator where A == MonomialAsGenerator<_Un>, B == GridComplex.RawGenerator {
-    public var algebraicDegree: Int {
-        return -left.exponent[0]
-    }
     
-    public var AlexanderDegree: Int {
-        return _Un.degreeOfMonomial(withExponent: left.exponent) / 2 + right.AlexanderDegree
+    public var distributionTable: String {
+        let elements = construction.generators
+            .mapValues { $0.count }
+            .map { (index, c) in (index[0], index[1], c)}
+        
+        return Format.table(elements: elements)
     }
 }

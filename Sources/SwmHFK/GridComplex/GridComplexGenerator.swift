@@ -15,7 +15,7 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
     public let MaslovDegree: Int
     public let AlexanderDegree: Int
     
-    public init(sequence: [UInt8], diagram: GridDiagram) {
+    public init(diagram: GridDiagram, sequence: [UInt8]) {
         let pts = sequence.toGridDiagramPoints()
         let m = diagram.MaslovDegree(for: pts)
         let a = diagram.AlexanderDegree(for: pts)
@@ -93,31 +93,16 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
     }
 }
 
-extension GridDiagram {
-    public func rectangles(from x: GridComplexGenerator, to y: GridComplexGenerator) -> [Rect] {
-        let (ps, qs) = (x.points, y.points)
-        let diff = Set(ps).subtracting(qs)
-        
-        guard diff.count == 2 else {
-            return []
-        }
-        
-        let pq = diff.toArray()
-        let (p, q) = (pq[0], pq[1])
-        
-        return [Rect(from: p, to: q, gridSize: gridSize),
-                Rect(from: q, to: p, gridSize: gridSize)]
+extension TensorGenerator where A == MonomialAsGenerator<_Un>, B == GridComplex.RawGenerator {
+    public var algebraicDegree: Int {
+        return -left.exponent[0]
     }
     
-    public func emptyRectangles(from x: GridComplexGenerator, to y: GridComplexGenerator) -> [Rect] {
-        // Note: Int(r) ∩ x = Int(r) ∩ y .
-        rectangles(from: x, to: y).filter{ r in
-            !r.intersects(x.points, interior: true)
-        }
+    public var AlexanderDegree: Int {
+        return _Un.degreeOfMonomial(withExponent: left.exponent) / 2 + right.AlexanderDegree
     }
 }
 
-// TODO make internal
 extension GridDiagram {
     private func I(_ x: [Point], _ y: [Point]) -> Int {
         (x * y).count{ (p, q) in p < q }
@@ -131,11 +116,11 @@ extension GridDiagram {
         ( J(x, x) - 2 * J(x, ref) + J(ref, ref) ) / 2 + 1
     }
     
-    public func MaslovDegree(for x: [Point]) -> Int {
+    internal func MaslovDegree(for x: [Point]) -> Int {
         M(Os, x)
     }
     
-    public func AlexanderDegree(for x: [Point]) -> Int {
+    internal func AlexanderDegree(for x: [Point]) -> Int {
         ( M(Os, x) - M(Xs, x) - Int(gridNumber) + 1 ) / 2
     }
 }

@@ -9,26 +9,23 @@ import SwmCore
 import Algorithms
 import Dispatch
 
-public typealias GeneratorSet = GridComplexConstruction
+internal struct GridComplexConstruction {
+    typealias Generator = GridComplexGenerator
+    typealias GeneratorTable = [MultiIndex<_2> : [Generator]]
+    typealias Point = GridDiagram.Point
+    typealias Rect  = GridDiagram.Rect
 
-// TODO make internal
-public struct GridComplexConstruction {
-    public typealias Generator = GridComplexGenerator
-    public typealias GeneratorTable = [MultiIndex<_2> : [Generator]]
-    public typealias Point = GridDiagram.Point
-    public typealias Rect  = GridDiagram.Rect
-
-    public let diagram: GridDiagram
+    let diagram: GridDiagram
     
-    public internal(set) var generators: GeneratorTable
+    let generators: GeneratorTable
     private let intersectionTable: OXIntersectionTable
     private let transpositions: [(UInt8, UInt8)]
     
-    public init(diagram: GridDiagram) {
+    init(diagram: GridDiagram) {
         self.init(diagram: diagram, filter: { (_, _) in true })
     }
     
-    public init(diagram: GridDiagram, filter: (Int, Int) -> Bool) {
+    init(diagram: GridDiagram, filter: (Int, Int) -> Bool) {
         let intersectionTable = OXIntersectionTable(diagram)
         let generators = GridComplexGeneratorProducer(diagram, intersectionTable).produce(filter: filter)
         
@@ -46,33 +43,33 @@ public struct GridComplexConstruction {
         }
     }
     
-    public var gridNumber: UInt8 {
+    var gridNumber: UInt8 {
         diagram.gridNumber
     }
     
-    public var numberOfGenerators: Int {
+    var numberOfGenerators: Int {
         generators.sum{ (_, set) in set.count }
     }
     
-    public var MaslovDegreeRange: ClosedRange<Int> {
+    var MaslovDegreeRange: ClosedRange<Int> {
         generators.keys.map{ $0[0] }.closureRange ?? (0 ... 0)
     }
     
-    public var AlexanderDegreeRange: ClosedRange<Int> {
+    var AlexanderDegreeRange: ClosedRange<Int> {
         generators.keys.map{ $0[1] }.closureRange ?? (0 ... 0)
     }
     
-    public func contains(bidegree: (Int, Int)) -> Bool {
+    func contains(bidegree: (Int, Int)) -> Bool {
         generators.contains(key: [bidegree.0, bidegree.1])
     }
     
     @available(*, deprecated)
-    public func generator(forSequence seq: [UInt8]) -> Generator? {
-        let x = Generator(sequence: seq, diagram: diagram)
+    func generator(forSequence seq: [UInt8]) -> Generator? {
+        let x = Generator(diagram: diagram, sequence: seq)
         return generators.contains(key: [x.MaslovDegree, x.AlexanderDegree]) ? x : nil
     }
     
-    public func generators(ofMaslovDegree d: Int) -> [Generator] {
+    func generators(ofMaslovDegree d: Int) -> [Generator] {
         generators.filter{ (idx, _) in idx[0] == d }.reduce(
             into: []
         ) {
@@ -80,7 +77,7 @@ public struct GridComplexConstruction {
         }
     }
     
-    public func filter(_ predicate: (Int, Int) -> Bool) -> Self {
+    func filter(_ predicate: (Int, Int) -> Bool) -> Self {
         .init(
             diagram: diagram,
             generators: generators.filter{ (index, _) in predicate(index[0], index[1]) },
@@ -88,7 +85,29 @@ public struct GridComplexConstruction {
         )
     }
     
-    public func adjacents(of x: Generator, with rectCond: (GridDiagram.Rect) -> Bool) -> [(Generator, GridDiagram.Rect)] {
+    func rectangles(from x: Generator, to y: Generator) -> [Rect] {
+        let (ps, qs) = (x.points, y.points)
+        let diff = Set(ps).subtracting(qs)
+        
+        guard diff.count == 2 else {
+            return []
+        }
+        
+        let pq = diff.toArray()
+        let (p, q) = (pq[0], pq[1])
+        
+        return [Rect(from: p, to: q, gridSize: diagram.gridSize),
+                Rect(from: q, to: p, gridSize: diagram.gridSize)]
+    }
+    
+    func emptyRectangles(from x: Generator, to y: Generator) -> [Rect] {
+        // Note: Int(r) ∩ x = Int(r) ∩ y .
+        rectangles(from: x, to: y).filter{ r in
+            !r.intersects(x.points, interior: true)
+        }
+    }
+
+    func adjacents(of x: Generator, with rectCond: (GridDiagram.Rect) -> Bool) -> [(Generator, GridDiagram.Rect)] {
         let gridSize = diagram.gridSize
         let seq = x.sequence
         let pts = x.points
@@ -117,15 +136,7 @@ public struct GridComplexConstruction {
         }
     }
     
-    internal func intersectionInfo(for r: Rect) -> OXIntersectionTable.Info {
+    func intersectionInfo(for r: Rect) -> OXIntersectionTable.Info {
         intersectionTable[r]
-    }
-    
-    public var distributionTable: String {
-        let elements = generators
-            .mapValues { $0.count }
-            .map { (index, c) in (index[0], index[1], c)}
-        
-        return Format.table(elements: elements)
     }
 }
