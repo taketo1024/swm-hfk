@@ -22,35 +22,34 @@ internal final class GridComplexGeneratorProducer {
         self.trans = Self.heapTranspositions(length: G.gridNumber - 1)
     }
     
-    func produce(filter: (Generator) -> Bool) -> [MultiIndex<_2> : Set<Generator>] {
+    func produce(filter: (Int, Int) -> Bool) -> GridComplexConstruction.GeneratorTable {
         let n = G.gridNumber
         let data = Array(0 ..< n).parallelMap { i -> [Generator] in
             self.produce(step: i, filter: filter)
         }
         
-        var result: [MultiIndex<_2> : Set<Generator>] = .empty
+        var result: GridComplexConstruction.GeneratorTable = .empty
         for d in data {
             for x in d {
-                result[[x.MaslovDegree, x.AlexanderDegree], default: []].insert(x)
+                result[[x.MaslovDegree, x.AlexanderDegree], default: []].append(x)
             }
         }
         return result
     }
     
-    private func produce(step i: UInt8, filter: (Generator) -> Bool) -> [Generator] {
+    private func produce(step i: UInt8, filter: (Int, Int) -> Bool) -> [Generator] {
         let n = G.gridNumber
         
         var data: [Generator] = .empty
         data.reserveCapacity((n - 1).factorial)
         
         func append(_ seq: [UInt8], _ M: Int, _ A: Int) {
-            let x = Generator(
-                sequence: seq,
-                MaslovDegree: M,
-                AlexanderDegree: A
-            )
-            
-            if filter(x) {
+            if filter(M, A) {
+                let x = Generator(
+                    sequence: seq,
+                    MaslovDegree: M,
+                    AlexanderDegree: A
+                )
                 data.append(x)
             }
         }

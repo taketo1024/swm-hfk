@@ -18,22 +18,23 @@ public struct GridComplexConstruction {
 
     public let diagram: GridDiagram
     
-    internal let generators: [MultiIndex<_2> : Set<Generator>]
+    internal typealias GeneratorTable = [MultiIndex<_2> : [Generator]]
+    internal let generators: GeneratorTable
     internal let intersectionTable: OXIntersectionTable
     private let transpositions: [(UInt8, UInt8)]
     
     public init(diagram: GridDiagram) {
-        self.init(diagram: diagram, filter: { _ in true })
+        self.init(diagram: diagram, filter: { (_, _) in true })
     }
     
-    public init(diagram: GridDiagram, filter: @escaping (Generator) -> Bool) {
+    public init(diagram: GridDiagram, filter: (Int, Int) -> Bool) {
         let intersectionTable = OXIntersectionTable(diagram)
         let generators = GridComplexGeneratorProducer(diagram, intersectionTable).produce(filter: filter)
         
         self.init(diagram: diagram, generators: generators, intersectionTable: intersectionTable)
     }
     
-    private init(diagram: GridDiagram, generators: [MultiIndex<_2> : Set<Generator>], intersectionTable: OXIntersectionTable) {
+    private init(diagram: GridDiagram, generators: GeneratorTable, intersectionTable: OXIntersectionTable) {
         self.diagram = diagram
         self.generators = generators
         self.intersectionTable = intersectionTable
@@ -65,9 +66,11 @@ public struct GridComplexConstruction {
         return generators.contains(key: [x.MaslovDegree, x.AlexanderDegree]) ? x : nil
     }
     
-    public func generators(ofMaslovDegree d: Int) -> Set<Generator> {
-        generators.keys.filter{ $0[0] == d }.reduce(into: Set()) {
-            $0.formUnion( generators[$1]! )
+    public func generators(ofMaslovDegree d: Int) -> [Generator] {
+        generators.filter{ (idx, _) in idx[0] == d }.reduce(
+            into: []
+        ) {
+            $0.append(contentsOf: $1.value )
         }
     }
     
