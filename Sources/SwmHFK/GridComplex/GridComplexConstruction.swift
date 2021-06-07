@@ -16,10 +16,10 @@ public struct GridComplexConstruction: Sequence {
     public typealias Rect  = GridDiagram.Rect
 
     public let diagram: GridDiagram
-    internal let generators: [Int : Generator]
+    internal let generators: [Generator.Code : Generator]
     
     private let intersectionTable: GridDiagram.OXIntersectionTable
-    private let transpositions: [(Int, Int)]
+    private let transpositions: [(UInt8, UInt8)]
     
     public init(diagram: GridDiagram) {
         self.init(diagram: diagram, filter: { _ in true })
@@ -30,16 +30,17 @@ public struct GridComplexConstruction: Sequence {
         let generators = GridComplexGeneratorProducer(diagram, intersectionTable, filter).produce()
         self.init(
             diagram: diagram,
-            generators: Dictionary(generators.map { x in (x.code, x) }),
+            generators: generators,
             intersectionTable: intersectionTable
         )
     }
     
-    private init(diagram: GridDiagram, generators: [Int : Generator], intersectionTable: GridDiagram.OXIntersectionTable) {
-        let n = diagram.gridNumber
+    private init(diagram: GridDiagram, generators: [Generator.Code : Generator], intersectionTable: GridDiagram.OXIntersectionTable) {
         self.diagram = diagram
         self.generators = generators
         self.intersectionTable = intersectionTable
+        
+        let n = UInt8(diagram.gridNumber)
         self.transpositions = (0 ..< n).choose(2).map{ t in (t[0], t[1]) }
     }
     
@@ -59,8 +60,8 @@ public struct GridComplexConstruction: Sequence {
         generators.values.map{ $0.AlexanderDegree }.closureRange ?? (0 ... 0)
     }
     
-    public func generator(forSequence seq: [Int]) -> Generator? {
-        let code = Generator.encode(seq)
+    public func generator(forSequence seq: [UInt8]) -> Generator? {
+        let code = Generator.code(for: seq)
         return generators[code]
     }
     
@@ -78,7 +79,7 @@ public struct GridComplexConstruction: Sequence {
     }
     
     public func adjacents(of x: Generator, with rectCond: (GridDiagram.Rect) -> Bool) -> [(Generator, GridDiagram.Rect)] {
-        let n = gridNumber
+        let gridSize = diagram.gridSize
         let seq = x.sequence
         let pts = x.points
         
@@ -87,8 +88,8 @@ public struct GridComplexConstruction: Sequence {
             let q = Point(2 * j, 2 * seq[j])
             
             let rs = [
-                Rect(from: p, to: q, gridSize: 2 * n),
-                Rect(from: q, to: p, gridSize: 2 * n)
+                Rect(from: p, to: q, gridSize: gridSize),
+                Rect(from: q, to: p, gridSize: gridSize)
             ].filter { r in
                 rectCond(r) && !r.intersects(pts, interior: true)
             }

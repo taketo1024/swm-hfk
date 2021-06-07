@@ -9,8 +9,9 @@ import SwmCore
 
 extension GridDiagram {
     private var allRects: [Rect] {
-        ((0 ..< gridNumber) * (0 ..< gridNumber)).flatMap { (x, y) -> [Rect] in
-            ((0 ..< gridNumber) * (0 ..< gridNumber)).map { (w, h) -> Rect in
+        let n = UInt8(gridNumber)
+        return ((0 ..< n) * (0 ..< n)).flatMap { (x, y) -> [Rect] in
+            ((0 ..< n) * (0 ..< n)).map { (w, h) -> Rect in
                 Rect(
                     origin: Point(2 * x, 2 * y),
                     size: Point(2 * w, 2 * h),

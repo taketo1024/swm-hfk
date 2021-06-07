@@ -9,25 +9,31 @@ import SwmCore
 import Dispatch
 
 public struct GridComplexGenerator: LinearCombinationGenerator {
-    public let code: Int
-    public let size: Int
+    public typealias Code = Int
+    public let code: Code
+    public let length: UInt8
     public let MaslovDegree: Int
     public let AlexanderDegree: Int
     
-    public init(sequence: [Int], MaslovDegree: Int, AlexanderDegree: Int) {
-        let n = sequence.count
-        self.code = Self.encode(sequence)
-        self.size = n
+    public init(sequence: [UInt8], MaslovDegree: Int, AlexanderDegree: Int) {
+        self.code = Self.code(for: sequence)
+        self.length = UInt8(sequence.count)
         self.MaslovDegree = MaslovDegree
         self.AlexanderDegree = AlexanderDegree
     }
     
-    public var sequence: [Int] {
-        Self.decode(code, size)
+    public static func code(for sequence: [UInt8]) -> Code {
+        encode(sequence)
+    }
+    
+    public var sequence: [UInt8] {
+        Self.decode(code, length)
     }
     
     public var points: [GridDiagram.Point] {
-        sequence.enumerated().map { (i, j) in .init(2 * i, 2 * j) }
+        sequence.enumerated().map { (i, j) in
+            .init(2 * UInt8(i), 2 * j)
+        }
     }
     
     public var degree: Int {
@@ -40,7 +46,7 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
     
     @inlinable
     public static func == (x: Self, y: Self) -> Bool {
-        (x.code, x.size) == (y.code, y.size)
+        x.code == y.code
     }
     
     @inlinable
@@ -53,15 +59,16 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
     }
     
     // See: Knuth, Volume 2, Section 3.3.2, Algorithm P
-    internal static func encode(_ _seq: [Int]) -> Int {
-        var (seq, r) = (_seq, _seq.count)
+    internal static func encode(_ _seq: [UInt8]) -> Int {
+        var seq = _seq
+        var r = UInt8(_seq.count)
         var code = 0
         
         while r > 0 {
             let m = (0 ..< r).first { m in
                 r - seq[m] == 1
             }!
-            code = code * r + m
+            code = code * Int(r) + Int(m)
             r -= 1
             seq.swapAt(r, m)
         }
@@ -69,11 +76,11 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
         return code
     }
     
-    internal static func decode(_ _code: Int, _ size: Int) -> [Int] {
+    internal static func decode(_ _code: Int, _ size: UInt8) -> [UInt8] {
         var (code, r) = (_code, 1)
         var seq = Array(0 ..< size)
         
-        while r < size {
+        while r < Int(size) {
             let m = code % (r + 1)
             code = code / (r + 1)
             seq.swapAt(r, m)

@@ -15,38 +15,34 @@ internal final class GridComplexGeneratorProducer {
     let G: GridDiagram
     let table: GridDiagram.OXIntersectionTable
     let filter: (Generator) -> Bool
-    let trans: [(Int, Int)]
+    let trans: [(UInt8, UInt8)]
     
     init(_ G: GridDiagram, _ intersectionTable: GridDiagram.OXIntersectionTable, _ filter: @escaping (Generator) -> Bool) {
         self.G = G
         self.table = intersectionTable
         self.filter = filter
         
-        let n = G.gridNumber
+        let n = UInt8(G.gridNumber)
         self.trans = Self.heapTranspositions(length: n - 1)
     }
     
-    func produce() -> Set<Generator> {
-        let n = G.gridNumber
+    func produce() -> [Generator.Code : Generator] {
+        let n = UInt8(G.gridNumber)
         
-        var data: Set<Generator> = []
-        data.reserveCapacity(n.factorial)
-        
-        Array(0 ..< n).forEach { i in
-            let data_i = self.produce(step: i)
-            data.formUnion(data_i)
+        let data = Array(0 ..< n).parallelFlatMap { i in
+            self.produce(step: i)
         }
         
-        return data
+        return Dictionary(data)
     }
     
-    private func produce(step i: Int) -> Set<Generator> {
-        let n = G.gridNumber
+    private func produce(step i: UInt8) -> [(Generator.Code, Generator)] {
+        let n = UInt8(G.gridNumber)
         
-        var data: Set<Generator> = []
+        var data: [(Generator.Code, Generator)] = .empty
         data.reserveCapacity((n - 1).factorial)
         
-        func add(_ seq: [Int], _ M: Int, _ A: Int) {
+        func add(_ seq: [UInt8], _ M: Int, _ A: Int) {
             let x = Generator(
                 sequence: seq,
                 MaslovDegree: M,
@@ -54,7 +50,7 @@ internal final class GridComplexGeneratorProducer {
             )
             
             if filter(x) {
-                data.insert(x)
+                data.append( (x.code, x) )
             }
         }
         
@@ -95,8 +91,8 @@ internal final class GridComplexGeneratorProducer {
         return data
     }
     
-    private func points(_ seq: [Int]) -> [Point] {
-        seq.enumerated().map { (i, j) in Point(2 * i, 2 * j) }
+    private func points(_ seq: [UInt8]) -> [Point] {
+        seq.enumerated().map { (i, j) in Point(2 * UInt8(i), 2 * j) }
     }
     
     private func I(_ x: [Point], _ y: [Point]) -> Int {
@@ -116,15 +112,15 @@ internal final class GridComplexGeneratorProducer {
     }
     
     private func A(_ x: [Point]) -> Int {
-        ( M(G.Os, x) - M(G.Xs, x) - G.gridNumber + 1 ) / 2
+        ( M(G.Os, x) - M(G.Xs, x) - Int(G.gridNumber) + 1 ) / 2
     }
     
     // see Heap's algorithm: https://en.wikipedia.org/wiki/Heap%27s_algorithm
-    private static func heapTranspositions(length n: Int) -> [(Int, Int)] {
-        var result: [(Int, Int)] = []
+    private static func heapTranspositions(length n: UInt8) -> [(UInt8, UInt8)] {
+        var result: [(UInt8, UInt8)] = []
         result.reserveCapacity(n.factorial)
         
-        func generate(_ k: Int) {
+        func generate(_ k: UInt8) {
             if k <= 1 {
                 return
             }
