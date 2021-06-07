@@ -16,7 +16,7 @@ public struct GridHomology {
         let (r1, r2) = (construction.MaslovDegreeRange, construction.AlexanderDegreeRange)
 
         for j in r2.reversed() where j >= 0 {
-            let restr = construction.filter{ $0.AlexanderDegree == j }
+            let restr = construction.filter{ (_, a) in a == j }
             let Cj = GridComplex(type: .tilde, construction: restr)
             let Hj = Cj.homology(options: .onlyStructures)
             

@@ -32,9 +32,7 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
     }
     
     public var points: [GridDiagram.Point] {
-        sequence.enumerated().map { (i, j) in
-            .init(2 * UInt8(i), 2 * j)
-        }
+        sequence.toGridDiagramPoints()
     }
     
     public var degree: Int {
@@ -121,5 +119,12 @@ extension GridDiagram {
     
     public func AlexanderDegree(for x: [Point]) -> Int {
         ( M(Os, x) - M(Xs, x) - Int(gridNumber) + 1 ) / 2
+    }
+
+    public func generator(for seq: [UInt8]) -> GridComplexGenerator {
+        let pts = seq.toGridDiagramPoints()
+        let m = MaslovDegree(for: pts)
+        let a = AlexanderDegree(for: pts)
+        return .init(sequence: seq, MaslovDegree: m, AlexanderDegree: a)
     }
 }

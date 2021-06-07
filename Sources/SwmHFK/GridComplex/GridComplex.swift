@@ -55,12 +55,12 @@ public struct GridComplex: ChainComplexType {
         construction.diagram
     }
     
-    public var gridNumber: Int {
+    public var gridNumber: UInt8 {
         diagram.gridNumber
     }
     
     public var numberOfIndeterminates: Int {
-        let n = gridNumber
+        let n = Int(gridNumber)
         switch type {
         case .tilde:    return 0
         case .hat:      return n - 1
@@ -95,17 +95,17 @@ public struct GridComplex: ChainComplexType {
         }
     }
     
-    public func rectCond(_ r: GridDiagram.Rect) -> Bool {
+    public func rectCond(_ rect: GridDiagram.Rect) -> Bool {
         let n = gridNumber
-        let info = construction.intersectionInfo(for: r)
+        let r = construction.intersectionInfo(for: rect)
         
         switch type {
         case .tilde:
-            return (!info.intersects(.X) && !info.intersects(.O))
+            return (!r.intersects(.X) && !r.intersects(.O))
         case .hat:
-            return (!info.intersects(.X) && !info.intersects(.O, n - 1))
+            return (!r.intersects(.X) && !r.intersects(.O, n - 1))
         case .minus:
-            return !info.intersects(.X)
+            return !r.intersects(.X)
         case .filtered:
             return true
         }
@@ -115,11 +115,10 @@ public struct GridComplex: ChainComplexType {
         dCache.getOrSet(key: x) {
             let ys = construction
                 .adjacents(of: x, with: { r in rectCond(r) })
-                .map { (y, r) -> InflatedGenerator in
-                    let info = construction.intersectionInfo(for: r)
-                    let u = InflatedGenerator.Left(
-                        exponent: info.intersections(.O)
-                    )
+                .map { (y, rect) -> InflatedGenerator in
+                    let r = construction.intersectionInfo(for: rect)
+                    let e = r.intersections(.O)
+                    let u = InflatedGenerator.Left(exponent: e)
                     return u ⊗ y
                 }
             return BaseModule(

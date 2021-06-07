@@ -11,10 +11,6 @@ import SwmHomology
 import Algorithms
 
 public struct GridDiagram {
-    enum OX {
-        case O, X
-    }
-
     // Memo:  Os and Xs are placed on  odd points,
     //       generators are placed on even points.
     public let name: String
@@ -87,12 +83,12 @@ public struct GridDiagram {
         self.Xs = Xs
     }
     
-    public var gridNumber: Int {
-        Os.count
+    public var gridNumber: UInt8 {
+        UInt8(Os.count)
     }
     
     public var gridSize: UInt8 {
-        2 * UInt8(gridNumber)
+        2 * gridNumber
     }
     
     public var rotate90: GridDiagram {
@@ -186,6 +182,19 @@ public struct GridDiagram {
         
         public var description: String {
             "[point: \(origin), size: \(size)]"
+        }
+        
+        internal static func allRects(forGridSize gridSize: UInt8) -> [Self] {
+            let n = gridSize / 2
+            return ((0 ..< n) * (0 ..< n)).flatMap { (x, y) -> [Self] in
+                ((0 ..< n) * (0 ..< n)).map { (w, h) -> Self in
+                    Rect(
+                        origin: Point(2 * x, 2 * y),
+                        size: Point(2 * w, 2 * h),
+                        gridSize: gridSize
+                    )
+                }
+            }
         }
     }
 }

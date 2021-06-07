@@ -11,15 +11,15 @@ import Dispatch
 
 public typealias GeneratorSet = GridComplexConstruction
 
-public struct GridComplexConstruction: Sequence {
+public struct GridComplexConstruction {
     public typealias Generator = GridComplexGenerator
     public typealias Point = GridDiagram.Point
     public typealias Rect  = GridDiagram.Rect
 
     public let diagram: GridDiagram
-    internal let generators: [Generator.Code : Generator]
     
-    private let intersectionTable: GridDiagram.OXIntersectionTable
+    internal let generators: [MultiIndex<_2> : Set<Generator>]
+    internal let intersectionTable: OXIntersectionTable
     private let transpositions: [(UInt8, UInt8)]
     
     public init(diagram: GridDiagram) {
@@ -27,56 +27,54 @@ public struct GridComplexConstruction: Sequence {
     }
     
     public init(diagram: GridDiagram, filter: @escaping (Generator) -> Bool) {
-        let intersectionTable = diagram.intersectionTable
-        let generators = GridComplexGeneratorProducer(diagram, intersectionTable, filter).produce()
-        self.init(
-            diagram: diagram,
-            generators: generators,
-            intersectionTable: intersectionTable
-        )
+        let intersectionTable = OXIntersectionTable(diagram)
+        let generators = GridComplexGeneratorProducer(diagram, intersectionTable).produce(filter: filter)
+        
+        self.init(diagram: diagram, generators: generators, intersectionTable: intersectionTable)
     }
     
-    private init(diagram: GridDiagram, generators: [Generator.Code : Generator], intersectionTable: GridDiagram.OXIntersectionTable) {
+    private init(diagram: GridDiagram, generators: [MultiIndex<_2> : Set<Generator>], intersectionTable: OXIntersectionTable) {
         self.diagram = diagram
         self.generators = generators
         self.intersectionTable = intersectionTable
         
-        let n = UInt8(diagram.gridNumber)
+        let n = diagram.gridNumber
         self.transpositions = (0 ..< n).combinations(ofCount: 2).map{ t in
             (t[0], t[1])
         }
     }
     
-    public var gridNumber: Int {
+    public var gridNumber: UInt8 {
         diagram.gridNumber
     }
     
     public var numberOfGenerators: Int {
-        generators.count
+        generators.sum{ (_, set) in set.count }
     }
     
     public var MaslovDegreeRange: ClosedRange<Int> {
-        generators.values.map{ $0.degree }.closureRange ?? (0 ... 0)
+        generators.keys.map{ $0[0] }.closureRange ?? (0 ... 0)
     }
     
     public var AlexanderDegreeRange: ClosedRange<Int> {
-        generators.values.map{ $0.AlexanderDegree }.closureRange ?? (0 ... 0)
+        generators.keys.map{ $0[1] }.closureRange ?? (0 ... 0)
     }
     
     public func generator(forSequence seq: [UInt8]) -> Generator? {
-        let code = Generator.code(for: seq)
-        return generators[code]
+        let x = diagram.generator(for: seq)
+        return generators.contains(key: [x.MaslovDegree, x.AlexanderDegree]) ? x : nil
     }
     
-    public func generators(ofMaslovDegree d: Int) -> [Generator] {
-        filter { $0.MaslovDegree == d }
+    public func generators(ofMaslovDegree d: Int) -> Set<Generator> {
+        generators.keys.filter{ $0[0] == d }.reduce(into: Set()) {
+            $0.formUnion( generators[$1]! )
+        }
     }
     
-    // FIXME: this is time consuming
-    public func filter(_ predicate: (Generator) -> Bool) -> Self {
-        GeneratorSet(
+    public func filter(_ predicate: (Int, Int) -> Bool) -> Self {
+        .init(
             diagram: diagram,
-            generators: generators.filter{ (_, x) in predicate(x) },
+            generators: generators.filter{ (index, _) in predicate(index[0], index[1]) },
             intersectionTable: intersectionTable
         )
     }
@@ -110,23 +108,14 @@ public struct GridComplexConstruction: Sequence {
         }
     }
     
-    public func intersectionInfo(for r: Rect) -> GridDiagram.OXIntersectionTable.Info {
+    internal func intersectionInfo(for r: Rect) -> OXIntersectionTable.Info {
         intersectionTable[r]
     }
     
-    public func makeIterator() -> AnySequence<Generator>.Iterator {
-        AnySequence(generators.values).makeIterator()
-    }
-    
     public var distributionTable: String {
-        let elements = self
-            .group { x in x.degree }
-            .mapValues { list in
-                list.group{ x in x.AlexanderDegree }
-                    .map{ (j, list) in (j, list.count) }
-            }
-            .sorted { (i, _) in i }
-            .flatMap { (i, list) in list.map{ (j, c) in (i, j, c) }}
+        let elements = generators
+            .mapValues { $0.count }
+            .map { (index, c) in (index[0], index[1], c)}
         
         return Format.table(elements: elements)
     }

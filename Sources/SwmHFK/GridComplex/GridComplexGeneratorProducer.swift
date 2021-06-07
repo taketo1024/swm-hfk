@@ -13,31 +13,34 @@ internal final class GridComplexGeneratorProducer {
     typealias Rect  = GridDiagram.Rect
     
     let G: GridDiagram
-    let table: GridDiagram.OXIntersectionTable
-    let filter: (Generator) -> Bool
+    let table: GridComplexConstruction.OXIntersectionTable
     let trans: [(UInt8, UInt8)]
     
-    init(_ G: GridDiagram, _ intersectionTable: GridDiagram.OXIntersectionTable, _ filter: @escaping (Generator) -> Bool) {
+    init(_ G: GridDiagram, _ intersectionTable: GridComplexConstruction.OXIntersectionTable) {
         self.G = G
         self.table = intersectionTable
-        self.filter = filter
-        
-        let n = UInt8(G.gridNumber)
-        self.trans = Self.heapTranspositions(length: n - 1)
+        self.trans = Self.heapTranspositions(length: G.gridNumber - 1)
     }
     
-    func produce() -> [Generator.Code : Generator] {
-        let n = UInt8(G.gridNumber)
-        let data = Array(0 ..< n).parallelFlatMap { i -> [(Generator.Code, Generator)] in
-            self.produce(step: i)
+    func produce(filter: (Generator) -> Bool) -> [MultiIndex<_2> : Set<Generator>] {
+        let n = G.gridNumber
+        let data = Array(0 ..< n).parallelMap { i -> [Generator] in
+            self.produce(step: i, filter: filter)
         }
-        return Dictionary(data)
+        
+        var result: [MultiIndex<_2> : Set<Generator>] = .empty
+        for d in data {
+            for x in d {
+                result[[x.MaslovDegree, x.AlexanderDegree], default: []].insert(x)
+            }
+        }
+        return result
     }
     
-    private func produce(step i: UInt8) -> [(Generator.Code, Generator)] {
-        let n = UInt8(G.gridNumber)
+    private func produce(step i: UInt8, filter: (Generator) -> Bool) -> [Generator] {
+        let n = G.gridNumber
         
-        var data: [(Generator.Code, Generator)] = .empty
+        var data: [Generator] = .empty
         data.reserveCapacity((n - 1).factorial)
         
         func append(_ seq: [UInt8], _ M: Int, _ A: Int) {
@@ -48,14 +51,14 @@ internal final class GridComplexGeneratorProducer {
             )
             
             if filter(x) {
-                data.append( (x.code, x) )
+                data.append(x)
             }
         }
         
         var seq = Array(0 ..< n)
         seq.swapAt(i, n - 1)
         
-        var pts = points(seq)
+        var pts = seq.toGridDiagramPoints()
         var m = G.MaslovDegree(for: pts)
         var a = G.AlexanderDegree(for: pts)
         
