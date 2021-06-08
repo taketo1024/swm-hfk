@@ -14,7 +14,8 @@ let package = Package(
     dependencies: [
         .package(
 			url: "https://github.com/taketo1024/swm-core.git",
-			from:"1.2.2"
+			from:"1.2.3"
+//            path: "../swm-core"
 		),
         .package(
             url: "https://github.com/taketo1024/swm-knots.git",
@@ -22,7 +23,8 @@ let package = Package(
         ),
         .package(
 			url: "https://github.com/taketo1024/swm-homology.git",
-			from: "1.2.1"
+			from: "1.2.3"
+//            path: "../swm-homology/"
 		),
     ],
     targets: [
@@ -32,9 +34,9 @@ let package = Package(
                 .product(name: "SwmCore", package: "swm-core"),
                 .product(name: "SwmKnots", package: "swm-knots"),
                 .product(name: "SwmHomology", package: "swm-homology"),
-			],
+            ],
             resources: [.process("Resources")]
-		),
+        ),
         .testTarget(
             name: "SwmHFKTests",
             dependencies: ["SwmHFK"]
