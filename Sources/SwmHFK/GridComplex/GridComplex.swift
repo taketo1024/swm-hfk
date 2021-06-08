@@ -56,6 +56,10 @@ public struct GridComplex: ChainComplexType {
         self.construction = construction
     }
     
+    public var support: [Int] {
+        MaslovDegreeRange.reversed()
+    }
+    
     public var diagram: GridDiagram {
         construction.diagram
     }
@@ -221,7 +225,11 @@ public struct GridComplex: ChainComplexType {
             }
         )
     }
-    
+
+    public func description(forObject obj: ModuleStructure<BaseModule>) -> String {
+        obj.isZero ? "" : "\(obj.rank)"
+    }
+
     public func distributionTable(inflated: Bool = false) -> String {
         let elements: [(Int, Int, Int)]
         if inflated {
