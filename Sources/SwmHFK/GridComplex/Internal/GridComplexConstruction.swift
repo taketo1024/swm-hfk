@@ -80,7 +80,9 @@ internal struct GridComplexConstruction {
     func filter(_ predicate: (Int, Int) -> Bool) -> Self {
         .init(
             diagram: diagram,
-            generators: generators.filter{ (index, _) in predicate(index[0], index[1]) },
+            generators: generators.filter { (index, _) in
+                predicate(index[0], index[1])
+            },
             intersectionTable: intersectionTable
         )
     }

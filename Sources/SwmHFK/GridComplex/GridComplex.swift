@@ -42,13 +42,18 @@ public struct GridComplex: ChainComplexType {
     private let cCache: Cache<Int, ModuleStructure<BaseModule>> = .empty
     private let dCache: Cache<RawGenerator, BaseModule> = .empty
     
+    public init(type: Variant, diagram: GridDiagram) {
+        self.init(type: type, diagram: diagram, filter: { (_, _) in true })
+    }
+    
+    public init(type: Variant, diagram: GridDiagram, filter: (Int, Int) -> Bool) {
+        let constr = GridComplexConstruction(diagram: diagram, filter: filter)
+        self.init(type: type, construction: constr)
+    }
+    
     internal init(type: Variant, construction: GridComplexConstruction) {
         self.type = type
         self.construction = construction
-    }
-    
-    public init(type: Variant, diagram G: GridDiagram) {
-        self.init(type: type, construction: GridComplexConstruction(diagram: G))
     }
     
     public var diagram: GridDiagram {
@@ -155,6 +160,13 @@ public struct GridComplex: ChainComplexType {
                 }
             }
         }
+    }
+    
+    public func filter(_ predicate: (Int, Int) -> Bool) -> Self {
+        .init(
+            type: type,
+            construction: construction.filter(predicate)
+        )
     }
     
     public var distributionTable: String {

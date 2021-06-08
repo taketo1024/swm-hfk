@@ -12,15 +12,12 @@ import SwmHomology
 public struct GridHomology {
     
     public static func genus(of G: GridDiagram) -> Int {
-        let construction = GridComplexConstruction(
-            diagram: G,
-            filter: { (_, j) in  j >= 0 }
-        )
-        let (r1, r2) = (construction.MaslovDegreeRange, construction.AlexanderDegreeRange)
+        let C = GridComplex(type: .tilde, diagram: G, filter: { (_, j) in j >= 1})
+        let r1 = C.MaslovDegreeRange
+        let r2 = C.AlexanderDegreeRange
 
         for j in r2.reversed() where j >= 0 {
-            let restr = construction.filter{ (_, a) in a == j }
-            let Cj = GridComplex(type: .tilde, construction: restr)
+            let Cj = C.filter{ (_, j1) in j1 == j }
             let Hj = Cj.homology(options: .onlyStructures)
             
             for i in r1.reversed() {
@@ -29,7 +26,7 @@ public struct GridHomology {
                 }
             }
         }
-        fatalError("impossible")
+        return 0
     }
 }
 
