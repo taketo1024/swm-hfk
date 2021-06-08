@@ -26,10 +26,30 @@ internal final class GridComplexGeneratorProducer {
     func produce(filter: (Int, Int) -> Bool) -> GeneratorTable {
         let n = diagram.gridNumber
         
-        return Array(0 ..< n).parallelMap { i in
+        let data = Array(0 ..< n).parallelMap { i in
             self.produce(step: i, filter: filter)
-        }.reduce(into: .empty) { (res, next) in
-            res.merge(next, uniquingKeysWith: +)
+        }
+        
+        // analyze size before merge.
+        
+        let count = data.reduce(
+            into: [MultiIndex<_2>: Int].empty
+        ) { (res, d) in
+            for (idx, list) in d {
+                res[idx, default: 0] += list.count
+            }
+        }
+        
+        return data.reduce(into: .empty) { (res, next) in
+            if res.isEmpty {
+                for (idx, c) in count {
+                    res[idx] = []
+                    res[idx]!.reserveCapacity(c)
+                }
+            }
+            for (idx, list) in next {
+                res[idx]! += list
+            }
         }
     }
     
