@@ -67,14 +67,11 @@ public struct GridDiagram {
     }
     
     public init(name: String? = nil, Os: [UInt8], Xs: [UInt8]) {
-        func points(_ seq: [UInt8]) -> [Point] {
-            seq.enumerated().map { (i, j) in
-                let x = 2 * UInt8(i) + 1
-                let y = 2 * UInt8(j) + 1
-                return Point(x, y)
-            }
-        }
-        self.init(name: name, Os: points(Os), Xs: points(Xs))
+        self.init(
+            name: name,
+            Os: .oddPoints(from: Os),
+            Xs: .oddPoints(from: Xs)
+        )
     }
     
     internal init(name: String? = nil, Os: [Point], Xs: [Point]) {

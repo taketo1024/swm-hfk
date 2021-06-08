@@ -25,11 +25,3 @@ internal extension Array {
         swapAt(Int(i), Int(j))
     }
 }
-
-internal extension Array where Element == UInt8 {
-    func toGridDiagramPoints() -> [GridDiagram.Point] {
-        .init(enumerated().map { (i, j) in
-            GridDiagram.Point(2 * UInt8(i), 2 * j)
-        })
-    }
-}

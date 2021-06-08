@@ -16,7 +16,7 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
     public let AlexanderDegree: Int
     
     public init(diagram: GridDiagram, sequence: [UInt8]) {
-        let pts = sequence.toGridDiagramPoints()
+        let pts = [GridDiagram.Point].evenPoints(from: sequence)
         let m = diagram.MaslovDegree(for: pts)
         let a = diagram.AlexanderDegree(for: pts)
         self.init(sequence: sequence, MaslovDegree: m, AlexanderDegree: a)
@@ -25,7 +25,7 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
     public init(sequence: [UInt8], MaslovDegree: Int, AlexanderDegree: Int) {
         assert(sequence.count <= 16)
         self.init(
-            code: Self.code(for: sequence),
+            code: Self.encode(sequence),
             gridNumber: UInt8(sequence.count),
             MaslovDegree: MaslovDegree,
             AlexanderDegree: AlexanderDegree
@@ -40,8 +40,8 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
         self.AlexanderDegree = AlexanderDegree
     }
     
-    public static func code(for sequence: [UInt8]) -> Code {
-        encode(sequence)
+    public subscript(_ i: UInt8) -> UInt8 {
+        Self.decode(code, gridNumber, at: i)
     }
     
     public var sequence: [UInt8] {
@@ -49,7 +49,7 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
     }
     
     public var points: [GridDiagram.Point] {
-        sequence.toGridDiagramPoints()
+        .evenPoints(from: sequence)
     }
     
     public var degree: Int {
@@ -81,13 +81,19 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
         }
     }
     
-    internal static func decode(_ code: Code, _ size: UInt8) -> [UInt8] {
-        (0 ..< size).reduce(into: ([UInt8].empty, code)) { (res, _) in
+    internal static func decode(_ code: Code, _ gridNumber: UInt8) -> [UInt8] {
+        (0 ..< gridNumber).reduce(into: ([UInt8].empty, code)) { (res, _) in
             res.0.append(UInt8(res.1 & 0xF))
             res.1 >>= 4
         }.0.reversed()
     }
-    
+
+    internal static func decode(_ code: Code, _ gridNumber: UInt8, at index: UInt8) -> UInt8 {
+        UInt8(
+            (code >> (4 * (gridNumber - index - 1))) & 0xF
+        )
+    }
+
     public var description: String {
         "\(sequence)"
     }

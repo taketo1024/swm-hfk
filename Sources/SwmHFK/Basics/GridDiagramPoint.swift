@@ -37,3 +37,17 @@ extension GridDiagram {
         }
     }
 }
+
+extension Array where Element == GridDiagram.Point {
+    public static func evenPoints(from seq: [UInt8]) -> Self {
+        .init(seq.enumerated().map { (i, j) in
+            GridDiagram.Point(2 * UInt8(i), 2 * j)
+        })
+    }
+    
+    public static func oddPoints(from seq: [UInt8]) -> Self {
+        .init(seq.enumerated().map { (i, j) in
+            GridDiagram.Point(2 * UInt8(i) + 1, 2 * j + 1)
+        })
+    }
+}
