@@ -108,31 +108,51 @@ internal struct GridComplexConstruction {
     }
 
     func adjacents(of x: Generator, with rectCond: (GridDiagram.Rect) -> Bool) -> [(Generator, GridDiagram.Rect)] {
+        
         let gridSize = diagram.gridSize
-        let seq = x.sequence
-        let pts = x.points
+        var seq = x.sequence
+        var pts = x.points
         
         return transpositions.flatMap { (i, j) -> [(Generator, GridDiagram.Rect)] in
             let p = Point(2 * i, 2 * seq[i])
             let q = Point(2 * j, 2 * seq[j])
             
-            let rs = [
-                Rect(from: p, to: q, gridSize: gridSize),
-                Rect(from: q, to: p, gridSize: gridSize)
-            ].filter { r in
+            let r1 = Rect(from: p, to: q, gridSize: gridSize)
+            let r2 = Rect(from: q, to: p, gridSize: gridSize)
+            
+            let rs = [r1, r2].filter { r in
                 rectCond(r) && !r.intersects(pts, interior: true)
             }
-            
             if rs.isEmpty {
                 return []
             }
             
-            let ySeq = seq.with{ $0.swapAt(i, j) }
-            guard let y = generator(forSequence: ySeq) else {
-                return []
+            // MEMO:
+            // We don't want to create arrays for each iteration,
+            // so we reuse the mutable ones.
+            
+            func swap() {
+                seq.swapAt(i, j)
+                pts[i] = Point(2 * i, 2 * seq[i])
+                pts[j] = Point(2 * j, 2 * seq[j])
             }
             
-            return rs.map { r in (y, r) }
+            swap()
+            defer { swap() } // revert for next iteration
+            
+            let y = GridComplexGeneratorProducer.generator(
+                adjacentTo: x,
+                connectedBy: r1,
+                intersections: intersectionInfo(for: r1),
+                sequence: seq,
+                points: pts
+            )
+            
+            if contains(bidegree: y.bidegree) {
+                return rs.map { r in (y, r) }
+            } else {
+                return []
+            }
         }
     }
     

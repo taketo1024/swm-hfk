@@ -56,6 +56,10 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
         MaslovDegree
     }
     
+    public var bidegree: (Int, Int) {
+        (MaslovDegree, AlexanderDegree)
+    }
+    
     public func isAdjacent(to y: Self) -> Bool {
         Set(sequence).subtracting(y.sequence).count == 2
     }
