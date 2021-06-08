@@ -87,31 +87,70 @@ public struct GridComplex: ChainComplexType {
     }
     
     public subscript(i: Int) -> ModuleStructure<BaseModule> {
-        typealias P = MultivariatePolynomial<R, _Un>
-        
-        let iMax = construction.MaslovDegreeRange.upperBound
-        guard i <= iMax else {
-            return .zeroModule
-        }
-        
-        return cCache.getOrSet(key: i) {
-            let gens = (0 ... (iMax - i) / 2).flatMap { k in
-                construction
-                    .generators(ofMaslovDegree: i + 2 * k)
-                    .flatMap { x -> [InflatedGenerator] in
-                        let mons = P.monomials(
-                            ofDegree: -2 * k,
-                            usingIndeterminates: 0 ..< numberOfIndeterminates
-                        )
-                        return mons.map { mon in
-                            .init(exponent: mon.leadExponent) ⊗ x
-                        }
-                    }
-            }
-            return ModuleStructure(rawGenerators: gens)
+        cCache.getOrSet(key: i) {
+            ModuleStructure(rawGenerators: generators(i))
         }
     }
     
+    public func generators(_ i: Int) -> [InflatedGenerator] {
+        generators(
+            degree: i,
+            bidegreeCond: { e in
+                { (i0, _) in i0 == i + 2 * e }
+            },
+            monomialCond: { _ in
+                { _ in true }
+            }
+        )
+    }
+    
+    public func generators(_ i: Int, _ j: Int) -> [InflatedGenerator] {
+        generators(
+            degree: i,
+            bidegreeCond: { e in
+                { (i0, j0) in i0 == i + 2 * e && j0 == j + e }
+            },
+            monomialCond: { _ in
+                { _ in true }
+            }
+        )
+    }
+    
+    public func generators(_ i: Int, _ j: Int, _ k: Int) -> [InflatedGenerator] {
+        generators(
+            degree: i,
+            bidegreeCond: { e in
+                { (i0, j0) in i0 == i + 2 * e && j0 == j + e }
+            },
+            monomialCond: { e in
+                { m in m.leadExponent[0] == k }
+            }
+        )
+    }
+    
+    private func generators(degree i: Int, bidegreeCond: (Int) -> (Int, Int) -> Bool, monomialCond: (Int) -> (MultivariatePolynomial<R, _Un>) -> Bool) -> [InflatedGenerator] {
+        let iMax = construction.MaslovDegreeRange.upperBound
+        if i > iMax {
+            return []
+        }
+        
+        return (0 ... (iMax - i) / 2).flatMap { e -> [InflatedGenerator] in
+            let p1 = bidegreeCond(e)
+            let p2 = monomialCond(e)
+            return construction
+                .generators(p1)
+                .flatMap { x -> [InflatedGenerator] in
+                    let mons = MultivariatePolynomial<R, _Un>.monomials(
+                        ofDegree: -2 * e,
+                        usingIndeterminates: 0 ..< numberOfIndeterminates
+                    ).filter(p2)
+                    return mons.map { mon in
+                        MonomialAsGenerator(exponent: mon.leadExponent) ⊗ x
+                    }
+                }
+        }
+    }
+
     public func rectCond(_ rect: GridDiagram.Rect) -> Bool {
         let n = gridNumber
         let r = construction.intersectionInfo(for: rect)
@@ -144,28 +183,42 @@ public struct GridComplex: ChainComplexType {
         }
     }
     
-    public var differential: Differential {
-        Differential(degree: -1) { _ in
-            ModuleEnd.linearlyExtend { t1 in
-                let (m1, x) = t1.factors
-                let dx = self.differentiate(x)
-                
-                if m1 == .unit {
-                    return dx
-                } else {
-                    return dx.mapGenerators { t2 in
-                        let (m2, y) = t2.factors
-                        return (m1 * m2) ⊗ y
-                    }
-                }
+    public func differentiate(_ t: InflatedGenerator) -> BaseModule {
+        let (m1, x) = t.factors
+        let dx = differentiate(x)
+        
+        if m1 == .unit {
+            return dx
+        } else {
+            return dx.mapGenerators { t2 in
+                let (m2, y) = t2.factors
+                return (m1 * m2) ⊗ y
             }
         }
     }
     
-    public func filter(_ predicate: (Int, Int) -> Bool) -> Self {
-        .init(
-            type: type,
-            construction: construction.filter(predicate)
+    public var differential: Differential {
+        Differential(degree: -1) { _ in
+            ModuleEnd.linearlyExtend { t in
+                differentiate(t)
+            }
+        }
+    }
+    
+    public func sub(_ j: Int) -> ChainComplex1<BaseModule> {
+        if type == .filtered {
+            fatalError("type: filtered does not decompose into direct summands.")
+        }
+        return .init(
+            grid: { i in
+                ModuleStructure(rawGenerators: generators(i, j))
+            },
+            degree: -1,
+            differential: { _ in
+                ModuleEnd.linearlyExtend { t in
+                    differentiate(t)
+                }
+            }
         )
     }
     

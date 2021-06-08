@@ -63,17 +63,15 @@ internal struct GridComplexConstruction {
         generators.contains(key: [bidegree.0, bidegree.1])
     }
     
-    @available(*, deprecated)
-    func generator(forSequence seq: [UInt8]) -> Generator? {
-        let x = Generator(diagram: diagram, sequence: seq)
-        return generators.contains(key: [x.MaslovDegree, x.AlexanderDegree]) ? x : nil
-    }
-    
-    func generators(ofMaslovDegree d: Int) -> [Generator] {
-        generators.filter{ (idx, _) in idx[0] == d }.reduce(
-            into: []
-        ) {
-            $0.append(contentsOf: $1.value )
+    func generators(_ filter: (Int, Int) -> Bool) -> [Generator] {
+        let indices = generators.keys.filter{ idx in filter(idx[0], idx[1]) }.sorted()
+        let count = indices.sum{ idx in generators[idx]!.count }
+            
+        return indices.reduce(into: []) { (res, idx) in
+            if res.isEmpty {
+                res.reserveCapacity(count)
+            }
+            res.append(contentsOf: generators[idx]!)
         }
     }
     

@@ -16,8 +16,8 @@ public struct GridHomology {
         let r1 = C.MaslovDegreeRange
         let r2 = C.AlexanderDegreeRange
 
-        for j in r2.reversed() where j >= 0 {
-            let Cj = C.filter{ (_, j1) in j1 == j }
+        for j in r2.reversed() {
+            let Cj = C.sub(j)
             let Hj = Cj.homology(options: .onlyStructures)
             
             for i in r1.reversed() {
