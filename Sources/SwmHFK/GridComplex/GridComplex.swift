@@ -151,7 +151,7 @@ public struct GridComplex: ChainComplexType {
         }
     }
 
-    public func rectCond(_ rect: GridDiagram.Rect) -> Bool {
+    private func rectCond(_ rect: GridDiagram.Rect) -> Bool {
         let n = gridNumber
         let r = construction.intersectionInfo(for: rect)
         
@@ -222,11 +222,22 @@ public struct GridComplex: ChainComplexType {
         )
     }
     
-    public var distributionTable: String {
-        let elements = construction.generators
-            .mapValues { $0.count }
-            .map { (index, c) in (index[0], index[1], c)}
-        
+    public func distributionTable(inflated: Bool = false) -> String {
+        let elements: [(Int, Int, Int)]
+        if inflated {
+            elements = (MaslovDegreeRange * AlexanderDegreeRange).compactMap { (i, j) in
+                let c = generators(i, j).count
+                return (c > 0) ? (i, j, c) : nil
+            }
+        } else {
+            elements = construction.generators
+                .mapValues { $0.count }
+                .map { (index, c) in (index[0], index[1], c)}
+        }
         return Format.table(elements: elements)
+    }
+    
+    public func printDistributionTable(inflated: Bool = false) {
+        print(distributionTable(inflated: inflated))
     }
 }
