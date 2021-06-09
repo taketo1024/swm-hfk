@@ -63,6 +63,14 @@ internal struct GridComplexConstruction {
         generators.contains(key: [bidegree.0, bidegree.1])
     }
     
+    func numberOfGenerators(_ i: Int, _ j: Int) -> Int {
+        generators[[i, j]]?.count ?? 0
+    }
+    
+    func generators(_ i: Int, _ j: Int) -> [Generator] {
+        generators[[i, j]] ?? []
+    }
+    
     func generators(_ filter: (Int, Int) -> Bool) -> [Generator] {
         let indices = generators.keys.filter{ idx in filter(idx[0], idx[1]) }.sorted()
         let count = indices.sum{ idx in generators[idx]!.count }
@@ -107,13 +115,13 @@ internal struct GridComplexConstruction {
         }
     }
 
-    func adjacents(of x: Generator, with rectCond: (GridDiagram.Rect) -> Bool) -> [(Generator, GridDiagram.Rect)] {
+    func adjacents(of x: Generator, with rectCond: (Rect) -> Bool) -> [(Generator, [Rect])] {
         
         let gridSize = diagram.gridSize
         var seq = x.sequence
         var pts = x.points
         
-        return transpositions.flatMap { (i, j) -> [(Generator, GridDiagram.Rect)] in
+        return transpositions.compactMap { (i, j) -> (Generator, [Rect])? in
             let p = Point(2 * i, 2 * seq[i])
             let q = Point(2 * j, 2 * seq[j])
             
@@ -124,7 +132,7 @@ internal struct GridComplexConstruction {
                 rectCond(r) && !r.intersects(pts, interior: true)
             }
             if rs.isEmpty {
-                return []
+                return nil
             }
             
             // MEMO:
@@ -149,9 +157,9 @@ internal struct GridComplexConstruction {
             )
             
             if contains(bidegree: y.bidegree) {
-                return rs.map { r in (y, r) }
+                return (y, rs)
             } else {
-                return []
+                return nil
             }
         }
     }

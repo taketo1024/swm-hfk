@@ -155,7 +155,7 @@ public struct GridComplex: ChainComplexType {
         }
     }
 
-    private func rectCond(_ rect: GridDiagram.Rect) -> Bool {
+    public func rectCondition(_ rect: GridDiagram.Rect) -> Bool {
         let n = gridNumber
         let r = construction.intersectionInfo(for: rect)
         
@@ -174,12 +174,14 @@ public struct GridComplex: ChainComplexType {
     public func differentiate(_ x: RawGenerator) -> BaseModule {
         dCache.getOrSet(key: x) {
             let ys = construction
-                .adjacents(of: x, with: { r in rectCond(r) })
-                .map { (y, rect) -> InflatedGenerator in
-                    let r = construction.intersectionInfo(for: rect)
-                    let e = r.intersections(.O)
-                    let u = InflatedGenerator.Left(exponent: e)
-                    return u ⊗ y
+                .adjacents(of: x, with: rectCondition)
+                .flatMap { (y, rects) -> [InflatedGenerator] in
+                    rects.map { rect in
+                        let r = construction.intersectionInfo(for: rect)
+                        let e = r.intersections(.O)
+                        let u = InflatedGenerator.Left(exponent: e)
+                        return u ⊗ y
+                    }
                 }
             return BaseModule(
                 elements: ys.map{ y in (y, R.identity) }
