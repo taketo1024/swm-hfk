@@ -97,59 +97,51 @@ public struct GridComplex: ChainComplexType {
     }
     
     public func generators(_ i: Int) -> [InflatedGenerator] {
-        generators(
-            degree: i,
-            bidegreeCond: { e in
-                { (i0, _) in i0 == i + 2 * e }
-            },
-            monomialCond: { _ in
-                { _ in true }
-            }
-        )
+        let iMax = MaslovDegreeRange.upperBound
+        if i > iMax {
+            return []
+        }
+        
+        let jMax = AlexanderDegreeRange.upperBound
+        let jMin = AlexanderDegreeRange.lowerBound - (iMax - i) / 2
+        
+        return (jMin ... jMax).flatMap { j in
+            generators(i, j)
+        }
     }
     
     public func generators(_ i: Int, _ j: Int) -> [InflatedGenerator] {
-        generators(
-            degree: i,
-            bidegreeCond: { e in
-                { (i0, j0) in i0 == i + 2 * e && j0 == j + e }
-            },
-            monomialCond: { _ in
-                { _ in true }
+        let n = numberOfIndeterminates
+        if n == 0 {
+            return construction.generators(i, j).map{ x -> InflatedGenerator in
+                .unit ⊗ x
             }
-        )
-    }
-    
-    public func generators(_ i: Int, _ j: Int, _ k: Int) -> [InflatedGenerator] {
-        generators(
-            degree: i,
-            bidegreeCond: { e in
-                { (i0, j0) in i0 == i + 2 * e && j0 == j + e }
-            },
-            monomialCond: { e in
-                { m in m.leadExponent[0] == k }
-            }
-        )
-    }
-    
-    private func generators(degree i: Int, bidegreeCond: (Int) -> (Int, Int) -> Bool, monomialCond: (Int) -> (MultivariatePolynomial<R, _Un>) -> Bool) -> [InflatedGenerator] {
+        }
+        
         let iMax = construction.MaslovDegreeRange.upperBound
         if i > iMax {
             return []
         }
         
+        //              * x ... (i0, j0)
+        //              |
+        //              | e
+        //        2e    |
+        //  * ----------
+        //  U^e ⊗ x ... (i, j)
+        
         return (0 ... (iMax - i) / 2).flatMap { e -> [InflatedGenerator] in
-            let p1 = bidegreeCond(e)
-            let p2 = monomialCond(e)
+            let i0 = i + 2 * e
+            let j0 = j + e
             return construction
-                .generators(p1)
+                .generators(i0, j0)
                 .flatMap { x -> [InflatedGenerator] in
-                    let mons = MultivariatePolynomial<R, _Un>.monomials(
+                    MultivariatePolynomial<R, _Un>.monomials(
                         ofDegree: -2 * e,
-                        usingIndeterminates: 0 ..< numberOfIndeterminates
-                    ).filter(p2)
-                    return mons.map { mon in
-                        MonomialAsGenerator(exponent: mon.leadExponent) ⊗ x
+                        usingIndeterminates: 0 ..< n
+                    ).map { mon in
+                        let U = MonomialAsGenerator(exponent: mon.leadExponent)
+                        return U ⊗ x
                     }
                 }
         }
