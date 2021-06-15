@@ -65,7 +65,7 @@ internal struct GridComplexConstruction {
     
     func generator(from x: Generator, by rect: GridDiagram.Rect, sequence: inout [UInt8]) -> Generator? {
         let (i, j) = (rect.origin.x/2 % gridNumber, rect.destination.x/2 % gridNumber)
-        let code = code(&sequence, transposing: (i, j))
+        let code = encode(&sequence, transposing: (i, j))
 
         let nO = rect.countIntersections(diagram.Os)
         let nX = rect.countIntersections(diagram.Xs)
@@ -80,7 +80,7 @@ internal struct GridComplexConstruction {
     // We don't want to create arrays for each iteration,
     // so we reuse the mutable ones.
     
-    private func code(_ seq: inout [UInt8], transposing t: (UInt8, UInt8)) -> Int {
+    private func encode(_ seq: inout [UInt8], transposing t: (UInt8, UInt8)) -> Int {
         let (i, j) = t
         
         seq.swapAt(i, j)
