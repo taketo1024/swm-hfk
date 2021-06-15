@@ -44,8 +44,14 @@ extension GridDiagram {
                 && inRange(p.y, origin.y, origin.y + size.y)
         }
 
+        @inlinable
         public func intersects(_ points: [Point], interior: Bool = false) -> Bool {
             points.contains{ p in self.contains(p, interior: interior) }
+        }
+        
+        @inlinable
+        public func countIntersections(_ points: [Point], interior: Bool = false) -> Int {
+            points.count{ p in self.contains(p, interior: interior) }
         }
         
         public var description: String {

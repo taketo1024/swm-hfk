@@ -7,19 +7,17 @@
 
 import SwmCore
 
-internal final class GridComplexGeneratorProducer {
+public final class GridComplexGeneratorProducer {
     typealias Generator = GridComplexGenerator
     typealias GeneratorTable = GridComplexConstruction.GeneratorTable
     typealias Point = GridDiagram.Point
     typealias Rect  = GridDiagram.Rect
     
     let diagram: GridDiagram
-    let table: GridComplexConstruction.OXIntersectionTable
     let trans: [(UInt8, UInt8)]
     
-    init(_ diagram: GridDiagram, _ intersectionTable: GridComplexConstruction.OXIntersectionTable) {
+    init(_ diagram: GridDiagram) {
         self.diagram = diagram
-        self.table = intersectionTable
         self.trans = Self.heapTranspositions(length: diagram.gridNumber - 1)
     }
     
@@ -40,7 +38,7 @@ internal final class GridComplexGeneratorProducer {
             }
         }
         
-        return data.reduce(into: .empty) { (res, next) in
+        let result = data.reduce(into: GeneratorTable.empty) { (res, next) in
             if res.isEmpty {
                 for (idx, c) in count {
                     res[idx] = []
@@ -51,6 +49,8 @@ internal final class GridComplexGeneratorProducer {
                 res[idx]! += list
             }
         }
+        
+        return result.mapValues{ $0.sorted{ $0.code} }
     }
     
     private func produce(step i: UInt8, filter: (Int, Int) -> Bool) -> GeneratorTable {
@@ -81,10 +81,9 @@ internal final class GridComplexGeneratorProducer {
             pts[i] = Point(2 * i, 2 * seq[i])
             pts[j] = Point(2 * j, 2 * seq[j])
 
-            x = Self.generator(
+            x = generator(
                 adjacentTo: x,
                 connectedBy: r,
-                intersections: table[r],
                 sequence: seq,
                 points: pts
             )
@@ -95,19 +94,15 @@ internal final class GridComplexGeneratorProducer {
         return result
     }
     
-    internal static func generator(adjacentTo x: Generator, connectedBy rect: Rect, intersections: GridComplexConstruction.OXIntersectionTable.Info, sequence seq: [UInt8], points pts: [Point]) -> Generator {
+    private func generator(adjacentTo x: Generator, connectedBy rect: Rect, sequence seq: [UInt8], points pts: [Point]) -> Generator {
         
         // See Book, p.68
         // (4.2)  M(y) - M(x) = 2 #(r ∩ Os) - 2 #(x ∩ Int(r)) - 1
         // (4.4)  A(y) - A(x) = #(r ∩ Os) - #(r ∩ Xs)
         
-        let nO = intersections.countIntersections(.O)
-        let nX = intersections.countIntersections(.X)
-        
-        let (i, j) = (rect.origin.x/2, rect.destination.x/2)
-        let c = (i + 1 ..< j).count { k in
-            rect.contains(pts[k], interior: true)
-        }
+        let nO = rect.countIntersections(diagram.Os)
+        let nX = rect.countIntersections(diagram.Xs)
+        let c =  rect.countIntersections(pts, interior: true)
         
         let m = x.MaslovDegree + 2 * (nO - c) - 1
         let a = x.AlexanderDegree + nO - nX
@@ -131,9 +126,9 @@ internal final class GridComplexGeneratorProducer {
             
             generate(k - 1)
             
-            for l in 0 ..< k - 1 {
-                let (i, j) = (k % 2 == 0) ? (l, k - 1) : (0, k - 1)
-                result.append( (i, j) )
+            for i in 0 ..< k - 1 {
+                let t = k.isEven ? (i, k - 1) : (0, k - 1)
+                result.append(t)
                 
                 generate(k - 1)
             }

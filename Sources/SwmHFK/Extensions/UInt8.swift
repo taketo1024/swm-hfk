@@ -7,13 +7,18 @@
 
 import Foundation
 
-internal extension UInt8 {
+public extension UInt8 {
+    @inlinable
+    var isEven: Bool {
+        self % 2 == 0
+    }
+    
     var factorial: Int {
         (1 ... self).reduce(1) { $0 * Int($1) }
     }
 }
 
-internal extension Array {
+public extension Array {
     @inlinable
     subscript (i: UInt8) -> Element {
         get { self[Int(i)] }

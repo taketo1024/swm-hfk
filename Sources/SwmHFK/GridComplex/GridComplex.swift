@@ -142,32 +142,32 @@ public struct GridComplex: ChainComplexType {
         }
     }
 
-    public func rectCondition(_ rect: GridDiagram.Rect) -> Bool {
+    public func rectCondition(_ r: GridDiagram.Rect) -> Bool {
         let n = gridNumber
-        let r = construction.intersectionInfo(for: rect)
-        
+        let Os = diagram.Os
+        let Xs = diagram.Xs
+
         switch type {
         case .tilde:
-            return (!r.intersects(.X) && !r.intersects(.O))
+            return (!r.intersects(Os) && !r.intersects(Xs))
         case .hat:
-            return (!r.intersects(.X) && !r.intersects(.O, n - 1))
+            return (!r.intersects(Xs) && !r.contains(Os[n - 1]))
         case .minus:
-            return !r.intersects(.X)
+            return !r.intersects(Xs)
         case .filtered:
             return true
         }
     }
     
     public func differentiate(_ x: RawGenerator) -> BaseModule {
+        let n = gridNumber
+        let Os = diagram.Os
         let ys = construction
             .adjacents(of: x, with: rectCondition)
-            .flatMap { (y, rects) -> [InflatedGenerator] in
-                rects.map { rect in
-                    let r = construction.intersectionInfo(for: rect)
-                    let e = r.intersections(.O)
-                    let u = InflatedGenerator.Left(exponent: e)
-                    return u ⊗ y
-                }
+            .map { (y, rect) -> InflatedGenerator in
+                let e = (0 ..< n).map { rect.contains(Os[$0]) ? 1 : 0 }
+                let u = InflatedGenerator.Left(exponent: e)
+                return u ⊗ y
             }
         return BaseModule(
             elements: ys.map{ y in (y, R.identity) }

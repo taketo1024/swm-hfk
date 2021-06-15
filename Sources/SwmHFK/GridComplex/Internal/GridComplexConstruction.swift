@@ -18,7 +18,6 @@ internal struct GridComplexConstruction {
     let diagram: GridDiagram
     
     let generators: GeneratorTable
-    private let intersectionTable: OXIntersectionTable
     private let transpositions: [(UInt8, UInt8)]
     
     init(diagram: GridDiagram) {
@@ -26,16 +25,15 @@ internal struct GridComplexConstruction {
     }
     
     init(diagram: GridDiagram, filter: (Int, Int) -> Bool) {
-        let intersectionTable = OXIntersectionTable(diagram)
-        let generators = GridComplexGeneratorProducer(diagram, intersectionTable).produce(filter: filter)
+        let p = GridComplexGeneratorProducer(diagram)
+        let generators = p.produce(filter: filter)
         
-        self.init(diagram: diagram, generators: generators, intersectionTable: intersectionTable)
+        self.init(diagram: diagram, generators: generators)
     }
     
-    private init(diagram: GridDiagram, generators: GeneratorTable, intersectionTable: OXIntersectionTable) {
+    private init(diagram: GridDiagram, generators: GeneratorTable) {
         self.diagram = diagram
         self.generators = generators
-        self.intersectionTable = intersectionTable
         
         let n = diagram.gridNumber
         self.transpositions = (0 ..< n).combinations(ofCount: 2).map{ t in
@@ -88,8 +86,7 @@ internal struct GridComplexConstruction {
             diagram: diagram,
             generators: generators.filter { (index, _) in
                 predicate(index[0], index[1])
-            },
-            intersectionTable: intersectionTable
+            }
         )
     }
     
@@ -115,13 +112,13 @@ internal struct GridComplexConstruction {
         }
     }
 
-    func adjacents(of x: Generator, with rectCond: (Rect) -> Bool) -> [(Generator, [Rect])] {
+    func adjacents(of x: Generator, with rectCond: (Rect) -> Bool) -> [(Generator, Rect)] {
         
         let gridSize = diagram.gridSize
+        let pts = x.points
         var seq = x.sequence
-        var pts = x.points
         
-        return transpositions.compactMap { (i, j) -> (Generator, [Rect])? in
+        return transpositions.flatMap { (i, j) -> [(Generator, Rect)] in
             let p = Point(2 * i, 2 * seq[i])
             let q = Point(2 * j, 2 * seq[j])
             
@@ -131,40 +128,38 @@ internal struct GridComplexConstruction {
             let rs = [r1, r2].filter { r in
                 rectCond(r) && !r.intersects(pts, interior: true)
             }
-            if rs.isEmpty {
-                return nil
-            }
             
-            // MEMO:
-            // We don't want to create arrays for each iteration,
-            // so we reuse the mutable ones.
-            
-            func swap() {
-                seq.swapAt(i, j)
-                pts[i] = Point(2 * i, 2 * seq[i])
-                pts[j] = Point(2 * j, 2 * seq[j])
-            }
-            
-            swap()
-            defer { swap() } // revert for next iteration
-            
-            let y = GridComplexGeneratorProducer.generator(
-                adjacentTo: x,
-                connectedBy: r1,
-                intersections: intersectionInfo(for: r1),
-                sequence: seq,
-                points: pts
-            )
-            
-            if contains(bidegree: y.bidegree) {
-                return (y, rs)
-            } else {
-                return nil
+            return rs.compactMap { r -> (Generator, Rect)? in
+                let nO = r.countIntersections(diagram.Os)
+                let nX = r.countIntersections(diagram.Xs)
+
+                let code = code(&seq, transposing: (i, j))
+                let m = x.MaslovDegree + 2 * nO - 1
+                let a = x.AlexanderDegree + nO - nX
+
+                if let y = find(code, m, a) {
+                    return (y, r)
+                } else {
+                    return nil
+                }
             }
         }
     }
     
-    func intersectionInfo(for r: Rect) -> OXIntersectionTable.Info {
-        intersectionTable[r]
+    // MEMO:
+    // We don't want to create arrays for each iteration,
+    // so we reuse the mutable ones.
+    
+    private func code(_ seq: inout [UInt8], transposing t: (UInt8, UInt8)) -> Int {
+        let (i, j) = t
+        
+        seq.swapAt(i, j)
+        defer{ seq.swapAt(i, j)}
+        
+        return GridComplexGenerator.encode(seq)
+    }
+    
+    private func find(_ code: GridComplexGenerator.Code, _ i: Int, _ j: Int) -> GridComplexGenerator? {
+        generators[[i, j]]?.binarySearch(elementWithId: code, by: { $0.code })
     }
 }
