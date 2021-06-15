@@ -37,10 +37,7 @@ public struct GridComplex: ChainComplexType {
     public typealias Differential = ChainMap<Self, Self>
     
     public var type: Variant
-    
     internal var construction: GridComplexConstruction
-    private let cCache: Cache<Int, ModuleStructure<BaseModule>> = .empty
-    private let dCache: Cache<RawGenerator, BaseModule> = .empty
     
     public init(type: Variant, diagram: GridDiagram) {
         self.init(type: type, diagram: diagram, filter: { (_, _) in true })
@@ -91,9 +88,7 @@ public struct GridComplex: ChainComplexType {
     }
     
     public subscript(i: Int) -> ModuleStructure<BaseModule> {
-        cCache.getOrSet(key: i) {
-            ModuleStructure(rawGenerators: generators(i))
-        }
+        ModuleStructure(rawGenerators: generators(i))
     }
     
     public func generators(_ i: Int) -> [InflatedGenerator] {
@@ -140,7 +135,7 @@ public struct GridComplex: ChainComplexType {
                         ofDegree: -2 * e,
                         usingIndeterminates: 0 ..< n
                     ).map { mon in
-                        let U = MonomialAsGenerator(exponent: mon.leadExponent)
+                        let U = MonomialAsGenerator<_Un>(exponent: mon.leadExponent)
                         return U ⊗ x
                     }
                 }
@@ -164,21 +159,19 @@ public struct GridComplex: ChainComplexType {
     }
     
     public func differentiate(_ x: RawGenerator) -> BaseModule {
-        dCache.getOrSet(key: x) {
-            let ys = construction
-                .adjacents(of: x, with: rectCondition)
-                .flatMap { (y, rects) -> [InflatedGenerator] in
-                    rects.map { rect in
-                        let r = construction.intersectionInfo(for: rect)
-                        let e = r.intersections(.O)
-                        let u = InflatedGenerator.Left(exponent: e)
-                        return u ⊗ y
-                    }
+        let ys = construction
+            .adjacents(of: x, with: rectCondition)
+            .flatMap { (y, rects) -> [InflatedGenerator] in
+                rects.map { rect in
+                    let r = construction.intersectionInfo(for: rect)
+                    let e = r.intersections(.O)
+                    let u = InflatedGenerator.Left(exponent: e)
+                    return u ⊗ y
                 }
-            return BaseModule(
-                elements: ys.map{ y in (y, R.identity) }
-            )
-        }
+            }
+        return BaseModule(
+            elements: ys.map{ y in (y, R.identity) }
+        )
     }
     
     public func differentiate(_ t: InflatedGenerator) -> BaseModule {
