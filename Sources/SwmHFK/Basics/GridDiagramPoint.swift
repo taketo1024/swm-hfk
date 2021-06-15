@@ -12,6 +12,7 @@ extension GridDiagram {
         public let x: UInt8
         public let y: UInt8
         
+        @inlinable
         public init(_ x: UInt8, _ y: UInt8) {
             self.x = x
             self.y = y
