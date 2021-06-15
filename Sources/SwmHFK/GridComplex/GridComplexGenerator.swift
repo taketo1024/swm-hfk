@@ -9,7 +9,7 @@ import SwmCore
 import Dispatch
 
 public struct GridComplexGenerator: LinearCombinationGenerator {
-    public typealias Code = UInt64
+    public typealias Code = Int
     public let code: Code
     public let gridNumber: UInt8
     public let MaslovDegree: Int
@@ -38,10 +38,6 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
         self.gridNumber = gridNumber
         self.MaslovDegree = MaslovDegree
         self.AlexanderDegree = AlexanderDegree
-    }
-    
-    public subscript(_ i: UInt8) -> UInt8 {
-        Self.decode(code, gridNumber, at: i)
     }
     
     public var sequence: [UInt8] {
@@ -78,24 +74,39 @@ public struct GridComplexGenerator: LinearCombinationGenerator {
         x.code < y.code
     }
     
-    internal static func encode(_ seq: [UInt8]) -> Code {
-        seq.reduce(into: UInt64(0)) {
-            $0 <<= 4
-            $0 |= UInt64($1)
+    // See: Knuth, Volume 2, Section 3.3.2, Algorithm P
+    internal static func encode(_ seq: [UInt8]) -> Int {
+        let n = UInt8(seq.count)
+        
+        var tmp = seq
+        var code = 0
+        
+        //       i       k                          i       k
+        // (..., k, ..., *, k+1, ..., n-1) -> (..., *, ..., k, k+1, ..., n-1)
+        
+        for k in (0 ..< n).reversed() {
+            let i = (0 ... k).first { i in
+                k == tmp[i]
+            }!
+            code = code * Int(k + 1) + Int(i)
+            tmp.swapAt(i, k)
         }
+        
+        return code
     }
     
-    internal static func decode(_ code: Code, _ gridNumber: UInt8) -> [UInt8] {
-        (0 ..< gridNumber).reduce(into: ([UInt8].empty, code)) { (res, _) in
-            res.0.append(UInt8(res.1 & 0xF))
-            res.1 >>= 4
-        }.0.reversed()
-    }
-
-    internal static func decode(_ code: Code, _ gridNumber: UInt8, at index: UInt8) -> UInt8 {
-        UInt8(
-            (code >> (4 * (gridNumber - index - 1))) & 0xF
-        )
+    internal static func decode(_ code: Int, _ size: UInt8) -> [UInt8] {
+        let n = Int(size)
+        var tmp = code
+        var seq = Array(0 ..< size)
+        
+        for k in 1 ..< n {
+            let i = tmp % (k + 1)
+            tmp = tmp / (k + 1)
+            seq.swapAt(i, k)
+        }
+        
+        return seq
     }
 
     public var description: String {

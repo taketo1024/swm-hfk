@@ -8,14 +8,16 @@
 import SwmCore
 import SwmHomology
 
-public struct GridHomology: GradedModuleStructureType {
+public struct GridHomology: IndexedModuleStructureType {
     public typealias BaseModule = GridComplex.BaseModule
     public typealias Index = MultiIndex<_2>
     public typealias Object = ModuleStructure<BaseModule>
     public typealias Variant = GridComplex.Variant
 
     public let chainComplex: GridComplex
-    private let homologyCache: Cache<Int, GradedModuleStructure<Int, BaseModule>> = .empty
+    
+    private typealias Homology1 = IndexedModuleStructure<Int, BaseModule>
+    private let homologyCache: Cache<Int, Homology1> = .empty
     
     public init(type: Variant, diagram: GridDiagram) {
         self.init(type: type, diagram: diagram, filter: { (_, _) in true })

@@ -13,6 +13,7 @@ extension GridDiagram {
         public let size: Point
         public let gridSize: UInt8
         
+        @inlinable
         public init(origin: Point, size: Point, gridSize: UInt8) {
             self.origin = origin
             self.size  = size
@@ -29,39 +30,51 @@ extension GridDiagram {
             Point(origin.x + size.x % gridSize, origin.y + size.y % gridSize)
         }
         
+        @usableFromInline
+        internal func inRange(_ p: UInt8, _ a: UInt8, _ b: UInt8) -> Bool {
+            (a <= p) ? (p <= b) : (p + gridSize <= b)
+        }
+        
+        @usableFromInline
+        internal func inRangeInterior(_ p: UInt8, _ a: UInt8, _ b: UInt8) -> Bool {
+            (a < p) ? (p < b) : (p + gridSize < b)
+        }
+        
+        @inlinable
         public func contains(_ p: Point, interior: Bool = false) -> Bool {
-            func inRange(_ p: UInt8, _ a: UInt8, _ b: UInt8) -> Bool {
-                if interior {
-                    return (a < p && p < b)
-                        || (a < p + gridSize && p + gridSize < b)
-                } else {
-                    return (a <= p && p <= b)
-                        || (a <= p + gridSize && p + gridSize <= b)
-                }
-            }
-            
-            return inRange(p.x, origin.x, origin.x + size.x)
+            interior
+                ? inRangeInterior(p.x, origin.x, origin.x + size.x)
+                && inRangeInterior(p.y, origin.y, origin.y + size.y)
+                : inRange(p.x, origin.x, origin.x + size.x)
                 && inRange(p.y, origin.y, origin.y + size.y)
         }
 
+        @inlinable
         public func intersects(_ points: [Point], interior: Bool = false) -> Bool {
             points.contains{ p in self.contains(p, interior: interior) }
+        }
+        
+        @inlinable
+        public func countIntersections(_ points: [Point], interior: Bool = false) -> Int {
+            points.count{ p in self.contains(p, interior: interior) }
         }
         
         public var description: String {
             "[point: \(origin), size: \(size)]"
         }
-        
-        internal static func allRects(forGridSize gridSize: UInt8) -> [Self] {
-            let n = gridSize / 2
-            return ((0 ..< n) * (0 ..< n)).flatMap { (x, y) -> [Self] in
-                ((0 ..< n) * (0 ..< n)).map { (w, h) -> Self in
-                    Rect(
-                        origin: Point(2 * x, 2 * y),
-                        size: Point(2 * w, 2 * h),
-                        gridSize: gridSize
-                    )
-                }
+    }
+}
+
+internal extension GridDiagram {
+    var allRects: [Rect] {
+        let n = gridNumber
+        return ((0 ..< n) * (0 ..< n)).flatMap { (x, y) -> [Rect] in
+            ((0 ..< n) * (0 ..< n)).map { (w, h) -> Rect in
+                Rect(
+                    origin: Point(2 * x, 2 * y),
+                    size: Point(2 * w, 2 * h),
+                    gridSize: gridSize
+                )
             }
         }
     }
