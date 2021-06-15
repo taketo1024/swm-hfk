@@ -14,11 +14,11 @@ import SwmHomology
 class GeneratorTests: XCTestCase {
     typealias Generator = GridComplexGenerator
     func testEncodeDecode() {
-        let n = 5
+        let n = UInt8(5)
         for _p in (0 ..< n).permutations() {
-            let p = _p.map{ UInt8($0) }
+            let p = _p.map{ $0 }
             let enc = Generator.encode(p)
-            let dec = Generator.decode(enc, UInt8(n))
+            let dec = Generator.decode(enc, n)
             XCTAssertEqual(p, dec)
         }
     }
@@ -26,7 +26,7 @@ class GeneratorTests: XCTestCase {
     func testDecodeEncode() {
         let n = UInt8(5)
         for _s in 0 ..< n.factorial {
-            let s = UInt64(_s)
+            let s = Int(_s)
             let seq = Generator.decode(s, UInt8(n))
             let enc = Generator.encode(seq)
             XCTAssertEqual(enc, s)
