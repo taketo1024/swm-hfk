@@ -12,33 +12,15 @@ import Dispatch
 internal struct GridComplexConstruction {
     typealias Generator = GridComplexGenerator
     typealias GeneratorTable = [MultiIndex<_2> : [Generator]]
-    typealias Point = GridDiagram.Point
-    typealias Rect  = GridDiagram.Rect
 
     let diagram: GridDiagram
-    
     let generators: GeneratorTable
-    private let transpositions: [(UInt8, UInt8)]
-    
-    init(diagram: GridDiagram) {
-        self.init(diagram: diagram, filter: { (_, _) in true })
-    }
     
     init(diagram: GridDiagram, filter: (Int, Int) -> Bool) {
-        let p = GridComplexGeneratorProducer(diagram)
-        let generators = p.produce(filter: filter)
-        
-        self.init(diagram: diagram, generators: generators)
-    }
-    
-    private init(diagram: GridDiagram, generators: GeneratorTable) {
         self.diagram = diagram
-        self.generators = generators
         
-        let n = diagram.gridNumber
-        self.transpositions = (0 ..< n).combinations(ofCount: 2).map{ t in
-            (t[0], t[1])
-        }
+        let p = GridComplexGeneratorProducer(diagram)
+        self.generators = p.produce(filter: filter)
     }
     
     var gridNumber: UInt8 {
@@ -81,69 +63,17 @@ internal struct GridComplexConstruction {
         }
     }
     
-    func filter(_ predicate: (Int, Int) -> Bool) -> Self {
-        .init(
-            diagram: diagram,
-            generators: generators.filter { (index, _) in
-                predicate(index[0], index[1])
-            }
-        )
-    }
-    
-    func rectangles(from x: Generator, to y: Generator) -> [Rect] {
-        let (ps, qs) = (x.points, y.points)
-        let diff = Set(ps).subtracting(qs)
-        
-        guard diff.count == 2 else {
-            return []
-        }
-        
-        let pq = diff.toArray()
-        let (p, q) = (pq[0], pq[1])
-        
-        return [Rect(from: p, to: q, gridSize: diagram.gridSize),
-                Rect(from: q, to: p, gridSize: diagram.gridSize)]
-    }
-    
-    func emptyRectangles(from x: Generator, to y: Generator) -> [Rect] {
-        // Note: Int(r) ∩ x = Int(r) ∩ y .
-        rectangles(from: x, to: y).filter{ r in
-            !r.intersects(x.points, interior: true)
-        }
-    }
+    func generator(from x: Generator, by rect: GridDiagram.Rect, sequence: inout [UInt8]) -> Generator? {
+        let (i, j) = (rect.origin.x/2 % gridNumber, rect.destination.x/2 % gridNumber)
+        let code = code(&sequence, transposing: (i, j))
 
-    func adjacents(of x: Generator, with rectCond: (Rect) -> Bool) -> [(Generator, Rect)] {
+        let nO = rect.countIntersections(diagram.Os)
+        let nX = rect.countIntersections(diagram.Xs)
         
-        let gridSize = diagram.gridSize
-        let pts = x.points
-        var seq = x.sequence
-        
-        return transpositions.flatMap { (i, j) -> [(Generator, Rect)] in
-            let p = Point(2 * i, 2 * seq[i])
-            let q = Point(2 * j, 2 * seq[j])
-            
-            let r1 = Rect(from: p, to: q, gridSize: gridSize)
-            let r2 = Rect(from: q, to: p, gridSize: gridSize)
-            
-            let rs = [r1, r2].filter { r in
-                rectCond(r) && !r.intersects(pts, interior: true)
-            }
-            
-            return rs.compactMap { r -> (Generator, Rect)? in
-                let nO = r.countIntersections(diagram.Os)
-                let nX = r.countIntersections(diagram.Xs)
+        let m = x.MaslovDegree + 2 * nO - 1
+        let a = x.AlexanderDegree + nO - nX
 
-                let code = code(&seq, transposing: (i, j))
-                let m = x.MaslovDegree + 2 * nO - 1
-                let a = x.AlexanderDegree + nO - nX
-
-                if let y = find(code, m, a) {
-                    return (y, r)
-                } else {
-                    return nil
-                }
-            }
-        }
+        return find(code, m, a)
     }
     
     // MEMO:

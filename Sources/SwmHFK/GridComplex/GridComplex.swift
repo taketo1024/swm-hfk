@@ -37,20 +37,18 @@ public struct GridComplex: ChainComplexType {
     public typealias Differential = ChainMap<Self, Self>
     
     public var type: Variant
+    
     internal var construction: GridComplexConstruction
+    private let transpositions: [(UInt8, UInt8)] // cached for performance
     
     public init(type: Variant, diagram: GridDiagram) {
         self.init(type: type, diagram: diagram, filter: { (_, _) in true })
     }
     
     public init(type: Variant, diagram: GridDiagram, filter: (Int, Int) -> Bool) {
-        let constr = GridComplexConstruction(diagram: diagram, filter: filter)
-        self.init(type: type, construction: constr)
-    }
-    
-    internal init(type: Variant, construction: GridComplexConstruction) {
         self.type = type
-        self.construction = construction
+        self.construction = GridComplexConstruction(diagram: diagram, filter: filter)
+        self.transpositions = (0 ..< construction.gridNumber).combinations(ofCount: 2).map{ t in (t[0], t[1]) }
     }
     
     public var support: [Int] {
@@ -142,29 +140,50 @@ public struct GridComplex: ChainComplexType {
         }
     }
 
-    public func rectCondition(_ r: GridDiagram.Rect) -> Bool {
-        let n = gridNumber
+    private func connectingRects(from x: RawGenerator) -> [GridDiagram.Rect] {
+        typealias Rect = GridDiagram.Rect
+        typealias Point = GridDiagram.Point
+        
+        let gridSize = diagram.gridSize
+        let pts = x.points
+        
+        return transpositions.flatMap { (i, j) -> [Rect] in
+            let (p, q) = (pts[i], pts[j])
+            let r1 = Rect(from: p, to: q, gridSize: gridSize)
+            let r2 = Rect(from: q, to: p, gridSize: gridSize)
+            
+            return [r1, r2].filter { r in
+                !r.intersects(pts, interior: true) && isAdmissible(rect: r)
+            }
+        }
+    }
+    
+    private func isAdmissible(rect: GridDiagram.Rect) -> Bool {
+        let n = diagram.gridNumber
         let Os = diagram.Os
         let Xs = diagram.Xs
-
+        
         switch type {
         case .tilde:
-            return (!r.intersects(Os) && !r.intersects(Xs))
+            return (!rect.intersects(Os) && !rect.intersects(Xs))
         case .hat:
-            return (!r.intersects(Xs) && !r.contains(Os[n - 1]))
+            return (!rect.intersects(Xs) && !rect.contains(Os[n - 1]))
         case .minus:
-            return !r.intersects(Xs)
+            return !rect.intersects(Xs)
         case .filtered:
             return true
         }
     }
     
     public func differentiate(_ x: RawGenerator) -> BaseModule {
-        let n = gridNumber
+        let n = numberOfIndeterminates
         let Os = diagram.Os
-        let ys = construction
-            .adjacents(of: x, with: rectCondition)
-            .map { (y, rect) -> InflatedGenerator in
+        
+        var seq = x.sequence // to avoid array creations
+        
+        let ys = connectingRects(from: x)
+            .map { rect -> InflatedGenerator in
+                let y = construction.generator(from: x, by: rect, sequence: &seq)!
                 let e = (0 ..< n).map { rect.contains(Os[$0]) ? 1 : 0 }
                 let u = InflatedGenerator.Left(exponent: e)
                 return u ⊗ y
